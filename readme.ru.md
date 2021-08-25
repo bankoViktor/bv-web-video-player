@@ -40,15 +40,15 @@ git clone https://github.com/bankoViktor/bv_web_video_player.git
 
 Подключите js файл в html документе
 ```js
- <script src="~/lib/bv-video-player/bv-video-player-0.4.js"></script>
+ <script src="~/lib/bv-video-player/index.js"></script>
 ```
 или можно воспользоваться сервисом [jsDelivr][jsdelivr]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/dist/js/bv-video-player-0.4.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.js
 ```
 или минимизированная версия
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/dist/js/bv-video-player-0.4.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.min.js
 ```
 
 

@@ -40,15 +40,15 @@ git clone https://github.com/bankoViktor/bv_web_video_player.git
 
 Include js file in html document
 ```js
- <script src="~/lib/bv-video-player/bv-video-player-0.4.js"></script>
+ <script src="~/lib/bv-video-player/index.js"></script>
 ```
 or you can use the service [jsDelivr][jsdelivr]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/bv-web-video-player.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.js
 ```
 or minified version
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/bv-web-video-player.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.min.js
 ```
 
 where:
