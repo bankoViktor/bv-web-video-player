@@ -44,11 +44,11 @@ Include js file in html document
 ```
 or you can use the service [jsDelivr][jsdelivr]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/index.js
 ```
 or minified version
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/index.min.js
 ```
 
 where:
@@ -59,6 +59,24 @@ where:
 - `bv-quality` - quality video tag:
     - attribute `value` - the value to add as the parameter value `q`;
     - content - displayed in the title of the menu item for selecting the video quality.
+
+
+
+<!-- RELEASE NOTES -->
+## Release notes
+
+#### 2021.08.26 - Release 0.4.1
+- Hotkey support.
+- Ability to hide playback speed controls (attribute `speed-controls`).
+- Fixed artifact of timecode item floating behind cursor.
+
+#### 2021.08.24 - Release 0.4
+- Playback control
+- Playback speed control.
+- Picture-in-picture mode.
+- Full screen mode.
+- Video volume control.
+
 
 
 <!-- CONTRIBUTING -->

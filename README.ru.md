@@ -44,11 +44,11 @@ git clone https://github.com/bankoViktor/bv_web_video_player.git
 ```
 или можно воспользоваться сервисом [jsDelivr][jsdelivr]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/index.js
 ```
 или минимизированная версия
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/index.min.js
 ```
 
 
@@ -68,6 +68,24 @@ https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.min.js
 - `bv-quality` - тег качества видео:
     - атрибут `value` - значение, добавляемое в качестве значения параметра `q`;
     - содержимое - отображается в названии пункта меню выбора качества видео.
+
+
+
+<!-- RELEASE NOTES -->
+## Описание релизов
+
+#### 2021.08.26 - Release 0.4.1
+- Поддержка горячих клавиш.
+- Возможность скрытия элементов управления скоростью воспроизведения (атрибут `speed-controls`).
+- Исправлен артефакт плавающего за курсором элемента с таймкодом.
+
+#### 2021.08.24 - Release 0.4
+- Управление воспроизведением
+- Управление скоростью воспроизведения.
+- Режим картинка в картинке.
+- Полноэкранный режим.
+- Управление громкостью видео.
+
 
 
 <!-- CONTRIBUTING -->
