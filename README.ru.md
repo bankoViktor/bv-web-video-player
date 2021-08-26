@@ -1,17 +1,8 @@
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
 
 *Прочитать это на других языках: [English](README.md), [Русский](README.ru.md).*
 
@@ -23,7 +14,6 @@
 Это обертка тега video HTML5.
 
 
-
 <!-- GETTING STARTED -->
 ## Для начала
 
@@ -32,34 +22,25 @@
 
 Клонировать репозиторий
 ```sh
-git clone https://github.com/bankoViktor/bv_web_video_player.git
+git clone https://github.com/bankoViktor/bv-web-video-player.git
 ```
+
 
 <!-- USAGE EXAMPLES -->
 ## Использование
 
 Подключите js файл в html документе
 ```js
- <script src="~/lib/bv-video-player/index.js"></script>
+ <script src="~/lib/bv-web-video-player/dist/bv-web-video-player.js"></script>
 ```
-или можно воспользоваться сервисом [jsDelivr][jsdelivr]
+или можно воспользоваться сервисом [![jsDelivr][jsdelivr-badge]][jsdelivr-url]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/dest/bv-web-video-player.js
 ```
 или минимизированная версия
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/dest/bv-web-video-player.min.js
 ```
-
-
-используйте следующий пример
-```html
-<bv-video-player src="https://host.com/video/{id}">
-    <bv-quality value="720">720p HD</bv-quality>
-    <bv-quality value="480">480p</bv-quality>
-</bv-video-player>
-```
-
 где:
 - `bv-video-player` - тег проигрывателя,
     - атрибут `src` - адрес конечной точки, сформированный URI запроса: `{src}?q={value}`;
@@ -68,6 +49,32 @@ https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.min.js
 - `bv-quality` - тег качества видео:
     - атрибут `value` - значение, добавляемое в качестве значения параметра `q`;
     - содержимое - отображается в названии пункта меню выбора качества видео.
+
+пример:
+```html
+<bv-video-player src="/videos/123" speed-controls>
+	<bv-quality value="1080">1080p Full HD</bv-quality>
+	<bv-quality value="720">720p HD</bv-quality>
+	<bv-quality value="480">480p</bv-quality>
+</bv-video-player>
+```
+пример URI отправляемого запроса: `/videos/123?q=1080`
+
+
+<!-- RELEASE NOTES -->
+## Описание релизов
+
+#### 2021.08.26 - Release 0.4.1
+- Поддержка горячих клавиш.
+- Возможность скрытия элементов управления скоростью воспроизведения (атрибут `speed-controls`).
+- Исправлен артефакт плавающего за курсором элемента с таймкодом.
+
+#### 2021.08.24 - Release 0.4
+- Управление воспроизведением
+- Управление скоростью воспроизведения.
+- Режим картинка в картинке.
+- Полноэкранный режим.
+- Управление громкостью видео.
 
 
 <!-- CONTRIBUTING -->
@@ -82,34 +89,31 @@ https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4/index.min.js
 5. Откройте Pull-запрос
 
 
-
 <!-- LICENSE -->
 ## Лицензия
 
 Распространяется по лицензии MIT.
 
 
-
 <!-- CONTACT -->
 ## Контакты
 
-Banko Viktor - [bankoViktor](https://github.com/bankoViktor) - bankviktor14@gmail.com
-
+Banko Viktor - bankoViktor][github-profile] - bankviktor14@gmail.com
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/bankoViktor/bv_web_video_player.svg?style=for-the-badge
-[contributors-url]: https://github.com/bankoViktor/bv_web_video_player/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/bankoViktor/bv_web_video_player.svg?style=for-the-badge
-[forks-url]: https://github.com/bankoViktor/bv_web_video_player/network/members
-[stars-shield]: https://img.shields.io/github/stars/bankoViktor/bv_web_video_player.svg?style=for-the-badge
-[stars-url]: https://github.com/bankoViktor/bv_web_video_player/stargazers
-[issues-shield]: https://img.shields.io/github/issues/bankoViktor/bv_web_video_player.svg?style=for-the-badge
-[issues-url]: https://github.com/bankoViktor/bv_web_video_player/issues
-[license-shield]: https://img.shields.io/github/license/bankoViktor/bv_web_video_player.svg?style=for-the-badge
-[license-url]: https://github.com/bankoViktor/bv_web_video_player/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/bankoViktor/bv-web-video-player.svg?style=for-the-badge
+[contributors-url]: https://github.com/bankoViktor/bv-web-video-player/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/bankoViktor/bv-web-video-player.svg?style=for-the-badge
+[forks-url]: https://github.com/bankoViktor/bv-web-video-player/network/members
+[stars-shield]: https://img.shields.io/github/stars/bankoViktor/bv-web-video-player.svg?style=for-the-badge
+[stars-url]: https://github.com/bankoViktor/bv-web-video-player/stargazers
+[issues-shield]: https://img.shields.io/github/issues/bankoViktor/bv-web-video-player.svg?style=for-the-badge
+[issues-url]: https://github.com/bankoViktor/bv-web-video-player/issues
+[license-shield]: https://img.shields.io/github/license/bankoViktor/bv-web-video-player.svg?style=for-the-badge
+[license-url]: https://github.com/bankoViktor/bv-web-video-player/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/bankoViktor
 [product-screenshot]: screenshot.png
-[jsdelivr]: https://www.jsdelivr.com/
+[github-profile]: https://github.com/bankoViktor
+[jsdelivr-url]: https://www.jsdelivr.com
+[jsdelivr-badge]: https://data.jsdelivr.com/v1/package/gh/bankoViktor/bv-web-video-player/badge
