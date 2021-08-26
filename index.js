@@ -744,6 +744,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._timeCode = document.createElement('div');
         this._timeCode.classList.add('timecode');
+        this._timeCode.hidden = true;
 
         timeCodeContainer.appendChild(this._timeCode);
         return timeCodeContainer;
