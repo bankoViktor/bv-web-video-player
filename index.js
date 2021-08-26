@@ -9,6 +9,22 @@
  * Требования:
  * 
  * - поддержка WebComponents
+ *
+ *
+ *
+ * Горячие клавишы:
+ *   [H] или [Стрелка влево] - Перейти на 5 сек раньше
+ *   [J] - Уменьшить скорость воспроизведения
+ *   [K] - Старт/стоп/нормальноая скорость
+ *   [L] - Увеличить скорость воспроизведения
+ *   [;] или [Стрелка вправо] - Перейти на 5 сек позже
+ *   [I] - Открыть мини проигрователь
+ *   [F] - Во весь экран
+ *   [M] - Отключение/включение звука
+ *   [0]-[9] или [NumPad 0]-[NumPad 9] - Перейти на % видео
+ *   [Стрелка вверх] - Плавное увеличение громкости звука
+ *   [Стрелка вниз] - Плавное уменьшение громкости звука
+ *
  * 
  * 
  * TODOs:
@@ -75,8 +91,121 @@ class HTMLBvVideoPlayer extends HTMLElement {
         * @type {string}
         */
         this._currentQuality = null;
+        
+        /**
+         * Использование горячих клавиш.
+         * @type {boolean}
+         */
+        this._hotkey = true;
 
         // ----------------------------------------------------------
+        
+        document.addEventListener('keyup', e => {
+            if (!this._hotkey) {
+                return;
+            }
+            
+            switch (e.keyCode) {
+                
+                case KeyEvent.DOM_VK_F:
+                    this._fullscrButton.click();
+                    break;
+                    
+                case KeyEvent.DOM_VK_K:
+                    if (this._video.paused) {
+                        this._playButton.click();
+                    } else if (this._video.playbackRate != 1) {
+                        this._video.playbackRate = 1;
+                        this._setPlaySpeed(this._video, this._playSpeedDef);
+                    } else {
+                        this._playButton.click();
+                    }
+                    break;
+                    
+                
+                case KeyEvent.DOM_VK_LEFT:
+                    this._video.currentTime = Math.max(this._video.currentTime - this._moveTimeStep, 0);
+                    break;
+                
+                case KeyEvent.DOM_VK_H:
+                    if (!this._video.paused) {
+                        this._playButton.click();
+                    }
+                    this._video.currentTime = Math.max(this._video.currentTime - 1/25, 0);
+                    break;                
+                
+                case KeyEvent.DOM_VK_RIGHT:
+                    this._video.currentTime = Math.min(this._video.currentTime + this._moveTimeStep, this._video.duration);
+                    break;
+                    
+                case KeyEvent.DOM_VK_SEMICOLON:
+                    if (!this._video.paused) {
+                        this._playButton.click();
+                    }
+                    this._video.currentTime = Math.min(this._video.currentTime + 1/25, this._video.duration);
+                    break;
+                    
+                case KeyEvent.DOM_VK_I:
+                    this._pipButton.click();
+                    break;
+                    
+                case KeyEvent.DOM_VK_J:
+                    this._slowerButton.click();
+                    break;
+                    
+                case KeyEvent.DOM_VK_L:
+                    this._fasterButton.click();
+                    break;
+                    
+                case KeyEvent.DOM_VK_M:
+                    this._volumeButton.click();
+                    if (this._video.volume == 0) {
+                        this._video.muted = false;
+                        this._video.volume = 1;
+                    }
+                    break;
+                    
+                case KeyEvent.DOM_VK_UP:
+                    this._video.volume = Math.min(Math.floor(this._video.volume * 100) / 100 + this._volumeStep, 1);
+                    if (this._video.muted) {
+                        this._video.muted = false;
+                    }
+                    break;
+                    
+                case KeyEvent.DOM_VK_DOWN:
+                    this._video.volume = Math.max(Math.floor(this._video.volume * 100) / 100 - this._volumeStep, 0);
+                    if (this._video.muted) {
+                        this._video.muted = false;
+                    }
+                    break;
+                    
+                case KeyEvent.DOM_VK_0:
+                case KeyEvent.DOM_VK_1:
+                case KeyEvent.DOM_VK_2:
+                case KeyEvent.DOM_VK_3:
+                case KeyEvent.DOM_VK_4:
+                case KeyEvent.DOM_VK_5:
+                case KeyEvent.DOM_VK_6:
+                case KeyEvent.DOM_VK_7:
+                case KeyEvent.DOM_VK_8:
+                case KeyEvent.DOM_VK_9:
+                case KeyEvent.DOM_VK_NUMPAD0:
+                case KeyEvent.DOM_VK_NUMPAD1:
+                case KeyEvent.DOM_VK_NUMPAD2:
+                case KeyEvent.DOM_VK_NUMPAD3:
+                case KeyEvent.DOM_VK_NUMPAD4:
+                case KeyEvent.DOM_VK_NUMPAD5:
+                case KeyEvent.DOM_VK_NUMPAD6:
+                case KeyEvent.DOM_VK_NUMPAD7:
+                case KeyEvent.DOM_VK_NUMPAD8:
+                case KeyEvent.DOM_VK_NUMPAD9:
+                    const base = e.keyCode < 96 ? 48 : 96;
+                    const m = (e.keyCode - base) / 10;
+                    this._video.currentTime = this._video.duration * m;
+                    break;
+            }                
+            
+        });
 
         this.addEventListener('fullscreenchange', () => {
             this._updateFullScreenButtonState();
@@ -979,6 +1108,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._slowerButton = document.createElement('button');
         this._slowerButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 28.5,26 15.5,18 28.5,10 z M 18.5,26 5.5,18 18.5,10 z"></path></g></svg>`;
+        this._slowerButton.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButton);
         this._slowerButton.addEventListener('click', e => {
             if (!e.target.disabled) {
                 this._setPlaySpeed(this._video, this._playSpeedCur - 1);
@@ -1009,6 +1139,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._fasterButton = document.createElement('button');
         this._fasterButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 7.5,26 20.5,18 7.5,10 z M 17.5,26 30.5,18 17.5,10 z"></path></g></svg>`;
+        this._fasterButton.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButton);
         this._fasterButton.addEventListener('click', e => {
             if (!e.target.disabled) {
                 this._setPlaySpeed(this._video, this._playSpeedCur + 1);
@@ -1021,6 +1152,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._settingsButton = document.createElement('button');
         this._settingsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172"><g transform-origin="50%" transform="scale(0.65)"><path d="M69.28711,14.33333l-3.52734,18.08464c-5.8821,2.22427 -11.32102,5.33176 -16.097,9.25228l-17.37077,-5.99089l-16.71289,28.97461l13.89941,12.07975c-0.49282,3.02401 -0.81185,6.10305 -0.81185,9.26628c0,3.16323 0.31903,6.24227 0.81185,9.26628l-13.89941,12.07975l16.71289,28.9746l17.37077,-5.99088c4.77599,3.92052 10.2149,7.02801 16.097,9.25227l3.52734,18.08464h33.42578l3.52735,-18.08464c5.88211,-2.22427 11.32102,-5.33176 16.097,-9.25227l17.37077,5.99088l16.71289,-28.9746l-13.89941,-12.07975c0.49282,-3.02401 0.81185,-6.10305 0.81185,-9.26628c0,-3.16323 -0.31902,-6.24227 -0.81185,-9.26628l13.89941,-12.07975l-16.71289,-28.97461l-17.37077,5.99089c-4.77598,-3.92052 -10.21489,-7.02801 -16.097,-9.25228l-3.52735,-18.08464zM86,57.33333c15.83117,0 28.66667,12.8355 28.66667,28.66667c0,15.83117 -12.8355,28.66667 -28.66667,28.66667c-15.83117,0 -28.66667,-12.8355 -28.66667,-28.66667c0,-15.83117 12.8355,-28.66667 28.66667,-28.66667z"></path></g></svg>`;
+        this._settingsButton.title = 'Настройки';
         this._settingsButton.addEventListener('click', () => {
             // Показать/скрыть
             const isShow = this._settingMenu.style.opacity !== '1';
@@ -1062,6 +1194,47 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         return panel;
     }
+    
+    /**
+     * Горячая клавиша.
+     * @type {HTMLElement} element
+     */
+    _hotkeyPrint(element) {        
+        if (!this._hotkey) {
+            return '';
+        }
+        
+        let key;
+        
+        switch (element) {
+            
+            case this._fasterButton:
+                key = 'L';
+                break;
+                
+            case this._playButton:
+                key = 'K';
+                break;
+            
+            case this._slowerButton:
+                key = 'J';
+                break;
+                
+            case this._volumeButton:
+                key = 'M';
+                break;
+                
+            case this._pipButton:
+                key = 'I';
+                break;
+                
+            case this._fullscrButton:
+                key = 'F';
+                break;
+        }
+        
+        return ` (${key})`;
+    }
 
     /**
      * Устанавливает состояние кнопки воспроизведение/стоп.
@@ -1069,12 +1242,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
     _updatePlayButtonState() {
         if (this._video.paused) {
             HTMLBvVideoPlayer._changeButtonState(this._playButton,
-                'Смотреть (K)',
+                'Смотреть' + this._hotkeyPrint(this._playButton),
                 `<svg viewBox='0 0 36 36'><path d='M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z'/></svg>`
             );
         } else {
             HTMLBvVideoPlayer._changeButtonState(this._playButton,
-                'Пауза (K)',
+                'Пауза' + this._hotkeyPrint(this._playButton),
                 `<svg viewBox='0 0 36 36'><path d='M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z'/></svg>`
             );
         }
@@ -1086,17 +1259,17 @@ class HTMLBvVideoPlayer extends HTMLElement {
     _updateVolumeButtonState() {
         if (this._video.muted || this._video.volume === 0) {
             HTMLBvVideoPlayer._changeButtonState(this._volumeButton,
-                'Включение звука (M)',
+                'Включение звука' + this._hotkeyPrint(this._volumeButton),
                 `<svg viewBox='0 0 36 36'><path d='m 21.48,17.98 c 0,-1.77 -1.02,-3.29 -2.5,-4.03 v 2.21 l 2.45,2.45 c .03,-0.2 .05,-0.41 .05,-0.63 z m 2.5,0 c 0,.94 -0.2,1.82 -0.54,2.64 l 1.51,1.51 c .66,-1.24 1.03,-2.65 1.03,-4.15 0,-4.28 -2.99,-7.86 -7,-8.76 v 2.05 c 2.89,.86 5,3.54 5,6.71 z M 9.25,8.98 l -1.27,1.26 4.72,4.73 H 7.98 v 6 H 11.98 l 5,5 v -6.73 l 4.25,4.25 c -0.67,.52 -1.42,.93 -2.25,1.18 v 2.06 c 1.38,-0.31 2.63,-0.95 3.69,-1.81 l 2.04,2.05 1.27,-1.27 -9,-9 -7.72,-7.72 z m 7.72,.99 -2.09,2.08 2.09,2.09 V 9.98 z'/></svg>`
             );
         } else if (this._video.volume < 0.5) {
             HTMLBvVideoPlayer._changeButtonState(this._volumeButton,
-                'Отключение звука (M)',
+                'Отключение звука' + this._hotkeyPrint(this._volumeButton),
                 `<svg viewBox='0 0 36 36'><path d='M8,21 L12,21 L17,26 L17,10 L12,15 L8,15 L8,21 Z M19,14 L19,22 C20.48,21.32 21.5,19.77 21.5,18 C21.5,16.26 20.48,14.74 19,14 Z'></path></svg >`
             );
         } else {
             HTMLBvVideoPlayer._changeButtonState(this._volumeButton,
-                'Отключение звука (M)',
+                'Отключение звука' + this._hotkeyPrint(this._volumeButton),
                 `<svg viewBox='0 0 36 36'><path d='M8,21 L12,21 L17,26 L17,10 L12,15 L8,15 L8,21 Z M19,14 L19,22 C20.48,21.32 21.5,19.77 21.5,18 C21.5,16.26 20.48,14.74 19,14 ZM19,11.29 C21.89,12.15 24,14.83 24,18 C24,21.17 21.89,23.85 19,24.71 L19,26.77 C23.01,25.86 26,22.28 26,18 C26,13.72 23.01,10.14 19,9.23 L19,11.29 Z'/></svg>`
             );
         }
@@ -1111,12 +1284,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
     _updatePipButtonState(isActive = false) {
         if (isActive) {
             HTMLBvVideoPlayer._changeButtonState(this._pipButton,
-                'Закрыть мини проигрыватель (I)',
+                'Закрыть мини проигрыватель' + this._hotkeyPrint(this._pipButton),
                 `<svg viewBox='0 0 36 36'><path d='M11,13 V23 H25 V13 z M29,25 L29,10.98 C29,9.88 28.1,9 27,9 L9,9 C7.9,9 7,9.88 7,10.98 L7,25 C7,26.1 7.9,27 9,27 L27,27 C28.1,27 29,26.1 29,25 L29,25 z M27,25.02 L9,25.02 L9,10.97 L27,10.97 L27,25.02 L27,25.02 z'/></svg>`
             );
         } else {
             HTMLBvVideoPlayer._changeButtonState(this._pipButton,
-                'Открыть мини проигрыватель (I)',
+                'Открыть мини проигрыватель' + this._hotkeyPrint(this._pipButton),
                 `<svg viewBox='0 0 36 36'><path d='M25,17 L17,17 L17,23 L25,23 L25,17 L25,17 z M29,25 L29,10.98 C29,9.88 28.1,9 27,9 L9,9 C7.9,9 7,9.88 7,10.98 L7,25 C7,26.1 7.9,27 9,27 L27,27 C28.1,27 29,26.1 29,25 L29,25 z M27,25.02 L9,25.02 L9,10.97 L27,10.97 L27,25.02 L27,25.02 z'/></svg>`
             );
         }
@@ -1131,7 +1304,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._speedIndicatorButton.disabled = this._playSpeedCur == this._playSpeedDef;
         this._speedIndicatorContent.title = this._playSpeedCur == this._playSpeedDef
             ? 'Текущая скорость воспроизведения'
-            : 'К нормальной скорости воспроизведения (K)';
+            : 'К нормальной скорости воспроизведения' + this._hotkeyPrint(this._playButton),
         this._speedIndicatorContent.innerText = "x" + this._video.playbackRate;
     }
 
@@ -1141,12 +1314,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
     _updateFullScreenButtonState() {
         if (document.fullscreen) {
             HTMLBvVideoPlayer._changeButtonState(this._fullscrButton,
-                'Выход из полноэкранного режима (F)',
+                'Выход из полноэкранного режима' + this._hotkeyPrint(this._fullscrButton),
                 `<svg viewBox='0 0 36 36'><path d='m 14,14 -4,0 0,2 6,0 0,-6 -2,0 0,4 0,0 z'/><path d='m 22,14 0,-4 -2,0 0,6 6,0 0,-2 -4,0 0,0 z'/><path d='m 20,26 2,0 0,-4 4,0 0,-2 -6,0 0,6 0,0 z'/><path d='m 10,22 4,0 0,4 2,0 0,-6 -6,0 0,2 0,0 z'/></svg>`
             );
         } else {
             HTMLBvVideoPlayer._changeButtonState(this._fullscrButton,
-                'Во весь экран (F)',
+                'Во весь экран' + this._hotkeyPrint(this._fullscrButton),
                 `<svg viewBox='0 0 36 36'><path d='m 10,16 2,0 0,-4 4,0 0,-2 L 10,10 l 0,6 0,0 z'/><path d='m 20,10 0,2 4,0 0,4 2,0 L 26,10 l -6,0 0,0 z'/><path d='m 24,24 -4,0 0,2 L 26,26 l 0,-6 -2,0 0,4 0,0 z'/><path d='M 12,20 10,20 10,26 l 6,0 0,-2 -4,0 0,-4 0,0 z'/></svg>`
             );
         }
@@ -1292,5 +1465,130 @@ class HTMLBvQuality extends HTMLElement {
 
 
 
+
 window.customElements.define('bv-video-player', HTMLBvVideoPlayer);
 window.customElements.define('bv-quality', HTMLBvQuality);
+
+
+
+
+// Keys
+if (typeof KeyEvent == "undefined") {
+    var KeyEvent = {
+        DOM_VK_CANCEL: 3,
+        DOM_VK_HELP: 6,
+        DOM_VK_BACK_SPACE: 8,
+        DOM_VK_TAB: 9,
+        DOM_VK_CLEAR: 12,
+        DOM_VK_RETURN: 13,
+        DOM_VK_ENTER: 14,
+        DOM_VK_SHIFT: 16,
+        DOM_VK_CONTROL: 17,
+        DOM_VK_ALT: 18,
+        DOM_VK_PAUSE: 19,
+        DOM_VK_CAPS_LOCK: 20,
+        DOM_VK_ESCAPE: 27,
+        DOM_VK_SPACE: 32,
+        DOM_VK_PAGE_UP: 33,
+        DOM_VK_PAGE_DOWN: 34,
+        DOM_VK_END: 35,
+        DOM_VK_HOME: 36,
+        DOM_VK_LEFT: 37,
+        DOM_VK_UP: 38,
+        DOM_VK_RIGHT: 39,
+        DOM_VK_DOWN: 40,
+        DOM_VK_PRINTSCREEN: 44,
+        DOM_VK_INSERT: 45,
+        DOM_VK_DELETE: 46,
+        DOM_VK_0: 48,
+        DOM_VK_1: 49,
+        DOM_VK_2: 50,
+        DOM_VK_3: 51,
+        DOM_VK_4: 52,
+        DOM_VK_5: 53,
+        DOM_VK_6: 54,
+        DOM_VK_7: 55,
+        DOM_VK_8: 56,
+        DOM_VK_9: 57,
+        DOM_VK_EQUALS: 61,
+        DOM_VK_A: 65,
+        DOM_VK_B: 66,
+        DOM_VK_C: 67,
+        DOM_VK_D: 68,
+        DOM_VK_E: 69,
+        DOM_VK_F: 70,
+        DOM_VK_G: 71,
+        DOM_VK_H: 72,
+        DOM_VK_I: 73,
+        DOM_VK_J: 74,
+        DOM_VK_K: 75,
+        DOM_VK_L: 76,
+        DOM_VK_M: 77,
+        DOM_VK_N: 78,
+        DOM_VK_O: 79,
+        DOM_VK_P: 80,
+        DOM_VK_Q: 81,
+        DOM_VK_R: 82,
+        DOM_VK_S: 83,
+        DOM_VK_T: 84,
+        DOM_VK_U: 85,
+        DOM_VK_V: 86,
+        DOM_VK_W: 87,
+        DOM_VK_X: 88,
+        DOM_VK_Y: 89,
+        DOM_VK_Z: 90,
+        DOM_VK_CONTEXT_MENU: 93,
+        DOM_VK_NUMPAD0: 96,
+        DOM_VK_NUMPAD1: 97,
+        DOM_VK_NUMPAD2: 98,
+        DOM_VK_NUMPAD3: 99,
+        DOM_VK_NUMPAD4: 100,
+        DOM_VK_NUMPAD5: 101,
+        DOM_VK_NUMPAD6: 102,
+        DOM_VK_NUMPAD7: 103,
+        DOM_VK_NUMPAD8: 104,
+        DOM_VK_NUMPAD9: 105,
+        DOM_VK_MULTIPLY: 106,
+        DOM_VK_ADD: 107,
+        DOM_VK_SEPARATOR: 108,
+        DOM_VK_SUBTRACT: 109,
+        DOM_VK_DECIMAL: 110,
+        DOM_VK_DIVIDE: 111,
+        DOM_VK_F1: 112,
+        DOM_VK_F2: 113,
+        DOM_VK_F3: 114,
+        DOM_VK_F4: 115,
+        DOM_VK_F5: 116,
+        DOM_VK_F6: 117,
+        DOM_VK_F7: 118,
+        DOM_VK_F8: 119,
+        DOM_VK_F9: 120,
+        DOM_VK_F10: 121,
+        DOM_VK_F11: 122,
+        DOM_VK_F12: 123,
+        DOM_VK_F13: 124,
+        DOM_VK_F14: 125,
+        DOM_VK_F15: 126,
+        DOM_VK_F16: 127,
+        DOM_VK_F17: 128,
+        DOM_VK_F18: 129,
+        DOM_VK_F19: 130,
+        DOM_VK_F20: 131,
+        DOM_VK_F21: 132,
+        DOM_VK_F22: 133,
+        DOM_VK_F23: 134,
+        DOM_VK_F24: 135,
+        DOM_VK_NUM_LOCK: 144,
+        DOM_VK_SCROLL_LOCK: 145,
+        DOM_VK_SEMICOLON: 186,
+        DOM_VK_COMMA: 188,
+        DOM_VK_PERIOD: 190,
+        DOM_VK_SLASH: 191,
+        DOM_VK_BACK_QUOTE: 192,
+        DOM_VK_OPEN_BRACKET: 219,
+        DOM_VK_BACK_SLASH: 220,
+        DOM_VK_CLOSE_BRACKET: 221,
+        DOM_VK_QUOTE: 222,
+        DOM_VK_META: 224
+    };
+}
