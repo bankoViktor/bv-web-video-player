@@ -35,11 +35,11 @@ Include js file in html document
 ```
 or you can use the service [![jsDelivr][jsdelivr-badge]][jsdelivr-url]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/dest/bv-web-video-player.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.2/dest/bv-web-video-player.js
 ```
 or minified version
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/dest/bv-web-video-player.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.2/dest/bv-web-video-player.min.js
 ```
 where:
 - `bv-video-player` - player tag,
@@ -63,6 +63,9 @@ example URI of a request to be sent: `/videos/123?q=1080`
 
 <!-- RELEASE NOTES -->
 ## Release notes
+
+#### 2021.08.26 - Release 0.4.2
+- Project structure.
 
 #### 2021.08.26 - Release 0.4.1
 - Hotkey support.

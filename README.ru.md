@@ -35,11 +35,11 @@ git clone https://github.com/bankoViktor/bv-web-video-player.git
 ```
 или можно воспользоваться сервисом [![jsDelivr][jsdelivr-badge]][jsdelivr-url]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/dest/bv-web-video-player.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.2/dest/bv-web-video-player.js
 ```
 или минимизированная версия
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/dest/bv-web-video-player.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.2/dest/bv-web-video-player.min.js
 ```
 где:
 - `bv-video-player` - тег проигрывателя,
@@ -63,6 +63,9 @@ https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.1/dest/bv-web-vi
 
 <!-- RELEASE NOTES -->
 ## Описание релизов
+
+#### 2021.08.26 - Release 0.4.2
+- Структура проекта.
 
 #### 2021.08.26 - Release 0.4.1
 - Поддержка горячих клавиш.
