@@ -97,6 +97,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @type {boolean}
          */
         this._hotkey = true;
+        
+         /**
+         * Показывать клавиши управления скоростью воспроизведения.
+         * @type {boolean}
+         */
+        this._speedControls = false;
 
         // ----------------------------------------------------------
         
@@ -361,7 +367,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['src'];
+        return ['src', 'speed-controls'];
     }
 
     get source() { return this._src; }
@@ -370,6 +376,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue === newValue)
             return;
+        
+        if (newValue === null) {
+            newValue = 'false';
+        }
 
         switch (name) {
 
@@ -377,8 +387,28 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._src = newValue;
                 this._video.src = newValue;
                 break;
+                
+            case 'speed-controls':
+                this._speedControls = newValue.toLowerCase() !== 'false';
+                this._updateSpeedButtonState();
+                break;
 
         }
+    }
+    
+    connectedCallback() {
+        this._updateSpeedButtonState();
+    }
+    
+    /**
+     * Обновляет состояние кнопок управления скорости.
+     */
+    _updateSpeedButtonState() {
+        this._slowerButton.disabled = !this._speedControls;
+        this._slowerButton.hidden = !this._speedControls;
+        this._speedIndicatorContent.hidden = !this._speedControls;
+        this._fasterButton.hidden = !this._speedControls;
+        this._fasterButton.disabled = !this._speedControls;
     }
 
     /**
@@ -1113,7 +1143,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             if (!e.target.disabled) {
                 this._setPlaySpeed(this._video, this._playSpeedCur - 1);
             }
-        })
+        });
 
         /**
          * Контейнер индикатора скорости воспроизведения.
@@ -1144,7 +1174,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             if (!e.target.disabled) {
                 this._setPlaySpeed(this._video, this._playSpeedCur + 1);
             }
-        })
+        });
 
         /**
          * Кнопка настроек.
@@ -1157,7 +1187,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             // Показать/скрыть
             const isShow = this._settingMenu.style.opacity !== '1';
             this._showMenu(isShow);
-        })
+        });
 
         /**
          * Кнопка включения/выключения режима картинка-в-картинке.
@@ -1170,7 +1200,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             } else {
                 this._video.requestPictureInPicture();
             }
-        })
+        });
 
         /**
          * Кнопка включения/выключения полноэкранного режима.
@@ -1183,7 +1213,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             } else {
                 this.requestFullscreen();
             }
-        })
+        });
 
         panel.appendChild(this._slowerButton);
         panel.appendChild(this._speedIndicatorButton);
