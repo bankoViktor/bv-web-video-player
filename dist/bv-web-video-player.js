@@ -1,7 +1,7 @@
 /*
  * Видео проигрыватель HTML5.
  * 
- * Версия:      x.x.x
+ * Версия:      {VERSION}
  * Автор:       Banko Viktor (bankviktor14@gmail.com)
  * Дата:        24.08.2021
  *
