@@ -56,16 +56,17 @@ where:
 
 | Attribute | Type | Default | Required | Description |
 | - | - | - | - | - |
-| `scr` | `string`  | `null` | `True` | the endpoint address, the request will be kind like `{src}?q={value}` |
+| `scr` | `string`  | `null` | `true` | the endpoint address, the request will be kind like `{src}?q={value}` |
 | `speed-controls` | `boolean` | `false` | `false`  | displays playback speed controls |
-| content | - | - | `True` | there must be at least one `bv-quality` element |
+| `hotkey` | `boolean` | `false` | `false` | hotkey handling |
+| content | - | - | `true` | there must be at least one `bv-quality` element |
 
 - tag `bv-quality`:
 
 | Attribute | Type | Default | Required | Description |
 | - | - | - | - | - |
-| `value` | `string` | `null` | `True` | the value to add as the parameter value `q` |
-| content | - | - | `True` | displayed in the title of the menu item for selecting the video quality |
+| `value` | `string` | `null` | `true` | the value to add as the parameter value `q` |
+| content | - | - | `true` | displayed in the title of the menu item for selecting the video quality |
 
 
 

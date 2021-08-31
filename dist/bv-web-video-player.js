@@ -3,7 +3,7 @@
  * 
  * Версия:      {VERSION}
  * Автор:       Banko Viktor (bankviktor14@gmail.com)
- * Дата:        24.08.2021
+ * Дата:        {DATA}
  *
  * 
  * Требования:
@@ -96,7 +96,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * Использование горячих клавиш.
          * @type {boolean}
          */
-        this._hotkey = true;
+        this._hotkey = false;
         
          /**
          * Показывать клавиши управления скоростью воспроизведения.
@@ -107,7 +107,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
         // ----------------------------------------------------------
         
         document.addEventListener('keyup', e => {
-            if (!this._hotkey) {
+
+            if (!this._hotkey || e.target.nodeName !== 'BODY') {
                 return;
             }
             
@@ -367,11 +368,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['src', 'speed-controls'];
+        return ['src', 'speed-controls', 'hotkey'];
     }
-
-    get source() { return this._src; }
-    set source(v) { this.setAttribute('src', v); }
 
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue === newValue)
@@ -393,9 +391,21 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._updateSpeedButtonState();
                 break;
 
+            case 'hotkey':
+                this._hotkey = newValue.toLowerCase() !== 'false';
+                break;
         }
     }
-    
+
+    get source() { return this._src; }
+    set source(v) { this.setAttribute('src', v); }
+
+    get speedcontrols() { return this._speedControls; }
+    set speedcontrols(v) { this.setAttribute('speed-controls', v); }
+
+    get hotkey() { return this._hotkey; }
+    set hotkey(v) { this.setAttribute('hotkey', v); }
+
     connectedCallback() {
         this._updateSpeedButtonState();
     }
@@ -1480,7 +1490,7 @@ class HTMLBvQuality extends HTMLElement {
          */
         const bvVideoPlayer = this.parentElement;
         if (bvVideoPlayer === null || bvVideoPlayer.nodeName !== 'BV-VIDEO-PLAYER') {
-            console.error(`Тег 'bv-quality' должен находиться внутри элумента 'bv-video-player'.`);
+            console.error(`Тег 'bv-quality' должен находиться внутри элемента 'bv-video-player'.`);
             return;
         }
 
