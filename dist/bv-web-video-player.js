@@ -1147,7 +1147,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._slowerButton.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButton);
         this._slowerButton.addEventListener('click', e => {
             if (!e.target.disabled) {
-                this._setPlaySpeed(this._video, this._playSpeedCur - 1);
+                this._setSpeed(this._video, this._playSpeedCur - 1);
             }
         });
 
@@ -1165,7 +1165,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._speedIndicatorButton = document.createElement('button');
         this._speedIndicatorButton.classList.add('ctl-speed-indicator');
         this._speedIndicatorButton.addEventListener('click', e => {
-            this._setPlaySpeed(this._video, this._playSpeedDef);
+            this._setSpeed(this._video, this._playSpeedDef);
         });
         this._speedIndicatorButton.appendChild(this._speedIndicatorContent);
 
@@ -1178,7 +1178,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._fasterButton.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButton);
         this._fasterButton.addEventListener('click', e => {
             if (!e.target.disabled) {
-                this._setPlaySpeed(this._video, this._playSpeedCur + 1);
+                this._setSpeed(this._video, this._playSpeedCur + 1);
             }
         });
 
@@ -1408,7 +1408,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @param {HTMLVideoElement} video Элемент проигрывателя.
      * @param {number} speedIndex Индекс скорости воспроизведния из набора.
      */
-    _setPlaySpeed(video, speedIndex) {
+    _setSpeed(video, speedIndex) {
         this._playSpeedCur = speedIndex;
         video.playbackRate = this._playSpeeds[speedIndex];
     }
