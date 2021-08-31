@@ -57,7 +57,8 @@ https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@{VERSION}/dist/bv-we
 
 | Атрибут | Тип | По-умолчнаю | Обязательно | Описание |
 | - | - | - | - | - |
-| `scr` | `string`  | `null` | `true` | адрес конечной точки, запрос будет выглядеть `{src}?q={value}` |
+| `scr` | `string`  | `null` | `true` | адрес конечной точки, запрос будет выглядеть `{src}?{param}={value}` |
+| `param` | `string` | `q` | `true` | название параметра в запросе |
 | `speed-controls` | `boolean` | `false` | `false`  | отображает элементы управления скоростью воспроизведения |
 | `hotkey` | `boolean` | `false` | `false` | обработка нажатия горячих клавиш |
 | content | - | - | `true` | должен быть хотя бы один элемент `bv-quality` |

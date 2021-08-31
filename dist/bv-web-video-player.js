@@ -87,10 +87,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._volumePressed = false;
 
         /**
-        * Значение текущего качества.
+        * Наименование параметра запроса.
         * @type {string}
         */
-        this._currentQuality = null;
+        this._param = 'q';
+
+        /**
+        * Текущее значение параметра запроса.
+        * @type {string}
+        */
+        this._curParValue = null;
         
         /**
          * Использование горячих клавиш.
@@ -241,7 +247,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._menuItemList.appendChild(menuItem);
 
             // Первый по-умолчанию
-            if (this._currentQuality === null) {
+            if (this._curParValue === null) {
                 menuItem.click();
             }
         });
@@ -364,7 +370,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['src', 'speed-controls', 'hotkey'];
+        return ['src', 'param', 'speed-controls', 'hotkey'];
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -381,6 +387,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._src = newValue;
                 this._video.src = newValue;
                 break;
+
+            case 'param':
+                this._param = newValue;
+                break;
                 
             case 'speed-controls':
                 this._speedControls = newValue.toLowerCase() !== 'false';
@@ -395,6 +405,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     get source() { return this._src; }
     set source(v) { this.setAttribute('src', v); }
+
+    get param() { return this._param; }
+    set param(v) { this.setAttribute('param', v); }
 
     get speedcontrols() { return this._speedControls; }
     set speedcontrols(v) { this.setAttribute('speed-controls', v); }
@@ -826,18 +839,18 @@ class HTMLBvVideoPlayer extends HTMLElement {
              */
             const value = sender.getAttribute('data-value');
 
-            if (this._currentQuality === value) {
+            if (this._curParValue === value) {
                 return;
             }
 
-            this._currentQuality = value;
+            this._curParValue = value;
 
             this._updateMenu();
 
             // устанавливаем новое качество
             const curTime = this._video.currentTime;
             const isPaused = this._video.paused;
-            this._video.src = `${this._src}?q=${this._currentQuality}`;
+            this._video.src = `${this._src}?${this._param}=${this._curParValue}`;
             this._video.currentTime = curTime;
             if (!isPaused) {
                 this._video.play();
@@ -858,7 +871,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         const items = Array.from(this._menuItemList.children);
         items.forEach((element, _i, _ar) => {
-            const isSelected = this._currentQuality === element.getAttribute('data-value');
+            const isSelected = this._curParValue === element.getAttribute('data-value');
             element.querySelector('.menu-item-icon').style.visibility = isSelected ? 'visible' : 'hidden';
         });
     }

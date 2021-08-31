@@ -56,7 +56,8 @@ where:
 
 | Attribute | Type | Default | Required | Description |
 | - | - | - | - | - |
-| `scr` | `string`  | `null` | `true` | the endpoint address, the request will be kind like `{src}?q={value}` |
+| `scr` | `string`  | `null` | `true` | the endpoint address, the request will be kind like `{src}?{param}={value}` |
+| `param` | `string` | `q` | `true` | parameter name in the request |
 | `speed-controls` | `boolean` | `false` | `false`  | displays playback speed controls |
 | `hotkey` | `boolean` | `false` | `false` | hotkey handling |
 | content | - | - | `true` | there must be at least one `bv-quality` element |
