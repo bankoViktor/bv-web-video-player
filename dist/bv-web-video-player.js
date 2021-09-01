@@ -110,6 +110,18 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._speedControls = false;
 
+        /**
+         * Количество секунд до скрытия элементов управления.
+         * @type {number}
+         */
+        const fadeCtrlSec = 4;
+
+        /**
+         * Таймер скрытия элементов управления при воспроизведении, в секундах.
+         * @type {number} 
+         */
+        this._moveTimerCount = fadeCtrlSec;
+
         // ----------------------------------------------------------
         
         window.addEventListener('keyup', e => {
@@ -251,6 +263,38 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 menuItem.click();
             }
         });
+        this.addEventListener('mousemove', () => {
+            this._moveTimerCount = fadeCtrlSec;
+            // Отображение
+            this._panelBotton.classList.remove('hided');
+            this._gradientBotton.classList.remove('hided');
+            // Отображение курсора в полноэкранном режиме
+            if (document.fullscreenElement) {
+                this.style.cursor = '';
+            }
+        });
+        this._moveTimerId = setInterval(() => {
+            if (this._video.paused) {
+                return;
+            }
+
+            if (this._moveTimerCount > 0) {
+                this._moveTimerCount -= 1;
+                //console.log('-1 = ' + this._moveTimerCount);
+            } else {
+                if (this._moveTimerCount != null) {
+                    this._moveTimerCount = null;
+                    // Скрываем
+                    this._panelBotton.classList.add('hided');
+                    this._gradientBotton.classList.add('hided');
+                    // Скрытие курсора в полноэкранном режиме
+                    if (document.fullscreenElement) {
+                        this.style.cursor = 'none';
+                    }
+                    //console.log('hided');
+                }
+            }
+        }, 1000);
 
         // DOM
         this.append(`Технология WebComponents не поддерживается вашим браузером. Обновите браузер.`);
@@ -268,10 +312,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._settingMenu = this._createSettingsMenu();
 
-        const panelBotton = this._createBottomPanel();
+        /**
+         * @type {HTMLDivElement}
+         */
+        this._panelBotton = this._createBottomPanel();
 
-        const gradientBotton = document.createElement('div');
-        gradientBotton.classList.add('gradient-bottom');
+        /**
+         * @type {HTMLDivElement}
+         */
+        this._gradientBotton = document.createElement('div');
+        this._gradientBotton.classList.add('gradient-bottom', 'fade');
 
         /**
          * Элемент Video.
@@ -354,8 +404,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         // Добавляем в DOM
         wrapper.appendChild(this._settingMenu);
-        wrapper.appendChild(panelBotton);
-        wrapper.appendChild(gradientBotton);
+        wrapper.appendChild(this._panelBotton);
+        wrapper.appendChild(this._gradientBotton);
         wrapper.appendChild(this._video);
 
         shadow.appendChild(style);
@@ -417,6 +467,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     connectedCallback() {
         this._updateSpeedButtonState();
+    }
+
+    disconnectedCallback() {
+        clearInterval(this._moveTimerId);
+        this._moveTimerId = 0;
     }
     
     /**
@@ -480,18 +535,27 @@ class HTMLBvVideoPlayer extends HTMLElement {
     bottom: 0;
 }
 
+.fade {
+    transition: visibility 0.15s, opacity 0.15s linear;
+}
+
+.hided {
+    visibility: collapse;
+    opacity: 0;
+}
+
 .panel-wrapper {
     margin: 0 10px;
 }
 
 /* GRADIENT */
 
-.gradient-bottom,
+.gradient-top,
 .gradient-bottom {
     position: absolute;
     left: 0;
     width: 100%;
-    height: 194px;
+    height: 150px;
 }
 
 .gradient-top {
@@ -891,7 +955,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     _createBottomPanel() {
         const bottomPanel = document.createElement('div');
-        bottomPanel.classList.add('panel-bottom');
+        bottomPanel.classList.add('panel-bottom', 'fade');
 
         const bottomPanelWrapper = document.createElement('div');
         bottomPanelWrapper.classList.add('panel-wrapper');
