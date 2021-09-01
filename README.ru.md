@@ -13,6 +13,7 @@
 
 Это обертка тега video HTML5.
 
+[Demo JSFiddle][demo-url]
 
 
 <!-- GETTING STARTED -->
@@ -143,3 +144,4 @@ Banko Viktor - [bankoViktor](https://github.com/bankoViktor) - bankviktor14@gmai
 [github-profile]: https://github.com/bankoViktor
 [jsdelivr-url]: https://www.jsdelivr.com
 [jsdelivr-badge]: https://data.jsdelivr.com/v1/package/gh/bankoViktor/bv-web-video-player/badge
+[demo-url]: https://jsfiddle.net/winston349/o4qf6tkb/2

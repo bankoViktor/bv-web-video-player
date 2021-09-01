@@ -13,6 +13,7 @@
 
 It is a wrapper around the HTML5 video tag.
 
+[Demo JSFiddle][demo-url]
 
 
 <!-- GETTING STARTED -->
@@ -142,3 +143,4 @@ Banko Viktor - [bankoViktor][github-profile] - bankviktor14@gmail.com
 [github-profile]: https://github.com/bankoViktor
 [jsdelivr-url]: https://www.jsdelivr.com
 [jsdelivr-badge]: https://data.jsdelivr.com/v1/package/gh/bankoViktor/bv-web-video-player/badge
+[demo-url]: https://jsfiddle.net/winston349/o4qf6tkb/2
