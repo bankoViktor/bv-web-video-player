@@ -14,6 +14,7 @@
 Это обертка тега video HTML5.
 
 
+
 <!-- GETTING STARTED -->
 ## Для начала
 
@@ -26,60 +27,79 @@ git clone https://github.com/bankoViktor/bv-web-video-player.git
 ```
 
 
+
 <!-- USAGE EXAMPLES -->
 ## Использование
 
 Подключите js файл в html документе
 ```js
- <script src="~/lib/bv-web-video-player/dist/bv-web-video-player.js"></script>
+<script src="~/lib/bv-web-video-player/dist/bv-web-video-player.js"></script>
 ```
 или можно воспользоваться сервисом [![jsDelivr][jsdelivr-badge]][jsdelivr-url]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.2/dest/bv-web-video-player.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.3/dist/bv-web-video-player.js
 ```
 или минимизированная версия
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.2/dest/bv-web-video-player.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.3/dist/bv-web-video-player.min.js
 ```
-где:
-- `bv-video-player` - тег проигрывателя,
-    - атрибут `src` - адрес конечной точки, сформированный URI запроса: `{src}?q={value}`;
-    - атрибут `speed-controls` - отображает элементы управления скоростью воспроизведения;
-    - содержимое - должен быть хотя бы один элемент `bv-quality`;
-- `bv-quality` - тег качества видео:
-    - атрибут `value` - значение, добавляемое в качестве значения параметра `q`;
-    - содержимое - отображается в названии пункта меню выбора качества видео.
 
-пример:
+используйте следующий пример
 ```html
-<bv-video-player src="/videos/123" speed-controls>
-	<bv-quality value="1080">1080p Full HD</bv-quality>
-	<bv-quality value="720">720p HD</bv-quality>
-	<bv-quality value="480">480p</bv-quality>
+<bv-video-player src="/video/123">
+    <bv-quality value="720">720p HD</bv-quality>
+    <bv-quality value="480">480p</bv-quality>
 </bv-video-player>
 ```
-пример URI отправляемого запроса: `/videos/123?q=1080`
 
+где:
+- тег `bv-video-player`:
 
+| Атрибут | Тип | По-умолчнаю | Обязательно | Описание |
+| - | - | - | - | - |
+| `scr` | `string`  | `null` | `true` | адрес конечной точки, запрос будет выглядеть `{src}?{param}={value}` |
+| `param` | `string` | `q` | `true` | название параметра в запросе |
+| `speed-controls` | `boolean` | `false` | `false`  | отображает элементы управления скоростью воспроизведения |
+| `hotkey` | `boolean` | `false` | `false` | обработка нажатия горячих клавиш |
+| content | - | - | `true` | должен быть хотя бы один элемент `bv-quality` |
+
+- тег `bv-quality`:
+
+| Атрибут | Тип | По-умолчнаю | Обязательно | Описание |
+| - | - | - | - | - |
+| `value` | `string` | `null` | `true` | значение, добавляемое в качестве значения параметра `q` |
+| content | - | - | `true` | отображается в названии пункта меню выбора качества видео |
+ 
+ 
+ 
 <!-- RELEASE NOTES -->
-## Описание релизов
+## Список изменений
+
+#### 2021.09.01 - Release 0.4.3
+- Исравлено ложное срабатывание горичих клавиш.
+- Добавлен атрибут `hotkey` вкл/выкл обработки горячих клавиш.
+- Скрытие элементов управления при бездействии во время воспроизведения.
+- Замена стандартного поведения клавиш Up/Down/Left/Right/Space на управление воспроизведением.
+- Добавлен атрибут `param` для звменты названия параметра в запросе.
+- Исправлено NaN отображение времени.
 
 #### 2021.08.26 - Release 0.4.2
-- Структура проекта.
+- Изменена структура проекта.
 
 #### 2021.08.26 - Release 0.4.1
 - Поддержка горячих клавиш.
-- Возможность скрытия элементов управления скоростью воспроизведения (атрибут `speed-controls`).
-- Исправлен артефакт плавающего за курсором элемента с таймкодом.
+- Возможность скрыть контроль скорости воспроизведения (атрибут `speed-controls`).
+- Исправлен артефакт элемента тайм-кода, плавающего за курсором.
 
 #### 2021.08.24 - Release 0.4
 - Управление воспроизведением
 - Управление скоростью воспроизведения.
-- Режим картинка в картинке.
+- Режим "Картинка в картинке".
 - Полноэкранный режим.
-- Управление громкостью видео.
-
-
+- Регулировка громкости звука видео.
+ 
+ 
+ 
 <!-- CONTRIBUTING -->
 ## Сотрудничество
 
@@ -92,16 +112,19 @@ https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.2/dest/bv-web-vi
 5. Откройте Pull-запрос
 
 
+
 <!-- LICENSE -->
 ## Лицензия
 
 Распространяется по лицензии MIT.
 
 
+
 <!-- CONTACT -->
 ## Контакты
 
-Banko Viktor - bankoViktor][github-profile] - bankviktor14@gmail.com
+Banko Viktor - [bankoViktor](https://github.com/bankoViktor) - bankviktor14@gmail.com
+
 
 
 <!-- MARKDOWN LINKS & IMAGES -->

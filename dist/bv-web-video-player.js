@@ -1,9 +1,9 @@
 /*
  * Видео проигрыватель HTML5.
  * 
- * Версия:      0.4.2
+ * Версия:      0.4.3
  * Автор:       Banko Viktor (bankviktor14@gmail.com)
- * Дата:        26.08.2021
+ * Дата:        01.09.2021
  *
  * 
  * Требования:
@@ -13,17 +13,17 @@
  *
  *
  * Горячие клавишы:
- *   [H] или [Стрелка влево] - Перейти на 5 сек раньше
+ *   [H] или [Left] - Перейти на 5 сек раньше
  *   [J] - Уменьшить скорость воспроизведения
- *   [K] - Старт/стоп/нормальноая скорость
+ *   [K],[Space] - Старт/стоп/нормальноая скорость
  *   [L] - Увеличить скорость воспроизведения
- *   [;] или [Стрелка вправо] - Перейти на 5 сек позже
+ *   [;] или [Right] - Перейти на 5 сек позже
  *   [I] - Открыть мини проигрователь
  *   [F] - Во весь экран
  *   [M] - Отключение/включение звука
  *   [0]-[9] или [NumPad 0]-[NumPad 9] - Перейти на % видео
- *   [Стрелка вверх] - Плавное увеличение громкости звука
- *   [Стрелка вниз] - Плавное уменьшение громкости звука
+ *   [Up] - Плавное увеличение громкости звука
+ *   [Down] - Плавное уменьшение громкости звука
  *
  * 
  * 
@@ -33,7 +33,7 @@
  * TODO пропадание контролов при воспроизведении и не двжении мыши
  * TODO всплывающая подсказка мутирования 0.5
  * TODO всплывающая подсказка далее/назад 5сек, плей/стоп
- * TODO название видео в левом верхнем углу прлеера
+ * TODO название видео в левом верхнем углу плеера
  * TODO спинер при ожидании загрузки
  * 
  * 
@@ -87,16 +87,22 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._volumePressed = false;
 
         /**
-        * Значение текущего качества.
+        * Наименование параметра запроса.
         * @type {string}
         */
-        this._currentQuality = null;
+        this._param = 'q';
+
+        /**
+        * Текущее значение параметра запроса.
+        * @type {string}
+        */
+        this._curParValue = null;
         
         /**
          * Использование горячих клавиш.
          * @type {boolean}
          */
-        this._hotkey = true;
+        this._hotkey = false;
         
          /**
          * Показывать клавиши управления скоростью воспроизведения.
@@ -104,10 +110,23 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._speedControls = false;
 
+        /**
+         * Количество секунд до скрытия элементов управления.
+         * @type {number}
+         */
+        const fadeCtrlSec = 4;
+
+        /**
+         * Таймер скрытия элементов управления при воспроизведении, в секундах.
+         * @type {number} 
+         */
+        this._moveTimerCount = fadeCtrlSec;
+
         // ----------------------------------------------------------
         
-        document.addEventListener('keyup', e => {
-            if (!this._hotkey) {
+        window.addEventListener('keyup', e => {
+
+            if (!this._hotkey || e.target !== document.body) {
                 return;
             }
             
@@ -116,19 +135,19 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 case KeyEvent.DOM_VK_F:
                     this._fullscrButton.click();
                     break;
-                    
+
+                case KeyEvent.DOM_VK_SPACE:
                 case KeyEvent.DOM_VK_K:
                     if (this._video.paused) {
                         this._playButton.click();
                     } else if (this._video.playbackRate != 1) {
                         this._video.playbackRate = 1;
-                        this._setPlaySpeed(this._video, this._playSpeedDef);
+                        this._setSpeed(this._video, this._playSpeedDef);
                     } else {
                         this._playButton.click();
                     }
                     break;
                     
-                
                 case KeyEvent.DOM_VK_LEFT:
                     this._video.currentTime = Math.max(this._video.currentTime - this._moveTimeStep, 0);
                     break;
@@ -176,6 +195,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     if (this._video.muted) {
                         this._video.muted = false;
                     }
+                    e.preventDefault();
                     break;
                     
                 case KeyEvent.DOM_VK_DOWN:
@@ -183,34 +203,29 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     if (this._video.muted) {
                         this._video.muted = false;
                     }
+                    e.preventDefault();
                     break;
-                    
-                case KeyEvent.DOM_VK_0:
-                case KeyEvent.DOM_VK_1:
-                case KeyEvent.DOM_VK_2:
-                case KeyEvent.DOM_VK_3:
-                case KeyEvent.DOM_VK_4:
-                case KeyEvent.DOM_VK_5:
-                case KeyEvent.DOM_VK_6:
-                case KeyEvent.DOM_VK_7:
-                case KeyEvent.DOM_VK_8:
-                case KeyEvent.DOM_VK_9:
-                case KeyEvent.DOM_VK_NUMPAD0:
-                case KeyEvent.DOM_VK_NUMPAD1:
-                case KeyEvent.DOM_VK_NUMPAD2:
-                case KeyEvent.DOM_VK_NUMPAD3:
-                case KeyEvent.DOM_VK_NUMPAD4:
-                case KeyEvent.DOM_VK_NUMPAD5:
-                case KeyEvent.DOM_VK_NUMPAD6:
-                case KeyEvent.DOM_VK_NUMPAD7:
-                case KeyEvent.DOM_VK_NUMPAD8:
-                case KeyEvent.DOM_VK_NUMPAD9:
-                    const base = e.keyCode < 96 ? 48 : 96;
-                    const m = (e.keyCode - base) / 10;
-                    this._video.currentTime = this._video.duration * m;
-                    break;
-            }                
-            
+
+            }
+
+            // Go to % positoon
+            if (e.keyCode >= KeyEvent.DOM_VK_0 && e.keyCode <= KeyEvent.DOM_VK_9 || e.keyCode >= KeyEvent.DOM_VK_NUMPAD0 && e.keyCode <= KeyEvent.DOM_VK_NUMPAD9) {
+                const base = e.keyCode < 96 ? 48 : 96;
+                const m = (e.keyCode - base) / 10;
+                this._video.currentTime = this._video.duration * m;
+            }
+
+        });
+
+        window.addEventListener('keydown', e => {
+            if (e.target === document.body && (
+                e.keyCode === KeyEvent.DOM_VK_SPACE ||
+                e.keyCode === KeyEvent.DOM_VK_UP || 
+                e.keyCode === KeyEvent.DOM_VK_DOWN || 
+                e.keyCode === KeyEvent.DOM_VK_LEFT || 
+                e.keyCode === KeyEvent.DOM_VK_RIGHT)) {
+                e.preventDefault();
+            }
         });
 
         this.addEventListener('fullscreenchange', () => {
@@ -244,10 +259,42 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._menuItemList.appendChild(menuItem);
 
             // Первый по-умолчанию
-            if (this._currentQuality === null) {
+            if (this._curParValue === null) {
                 menuItem.click();
             }
         });
+        this.addEventListener('mousemove', () => {
+            this._moveTimerCount = fadeCtrlSec;
+            // Отображение
+            this._panelBotton.classList.remove('hided');
+            this._gradientBotton.classList.remove('hided');
+            // Отображение курсора в полноэкранном режиме
+            if (document.fullscreenElement) {
+                this.style.cursor = '';
+            }
+        });
+        this._moveTimerId = setInterval(() => {
+            if (this._video.paused) {
+                return;
+            }
+
+            if (this._moveTimerCount > 0) {
+                this._moveTimerCount -= 1;
+                //console.log('-1 = ' + this._moveTimerCount);
+            } else {
+                if (this._moveTimerCount != null) {
+                    this._moveTimerCount = null;
+                    // Скрываем
+                    this._panelBotton.classList.add('hided');
+                    this._gradientBotton.classList.add('hided');
+                    // Скрытие курсора в полноэкранном режиме
+                    if (document.fullscreenElement) {
+                        this.style.cursor = 'none';
+                    }
+                    //console.log('hided');
+                }
+            }
+        }, 1000);
 
         // DOM
         this.append(`Технология WebComponents не поддерживается вашим браузером. Обновите браузер.`);
@@ -265,10 +312,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._settingMenu = this._createSettingsMenu();
 
-        const panelBotton = this._createBottomPanel();
+        /**
+         * @type {HTMLDivElement}
+         */
+        this._panelBotton = this._createBottomPanel();
 
-        const gradientBotton = document.createElement('div');
-        gradientBotton.classList.add('gradient-bottom');
+        /**
+         * @type {HTMLDivElement}
+         */
+        this._gradientBotton = document.createElement('div');
+        this._gradientBotton.classList.add('gradient-bottom', 'fade');
 
         /**
          * Элемент Video.
@@ -281,10 +334,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
              * @type {HTMLVideoElement} 
              */
             const sender = e.currentTarget;
-            this._timeCurrent.innerText = HTMLBvVideoPlayer._dur2str(sender.currentTime);
             const position = sender.currentTime / sender.duration;
             this._progressPos.style.width = position * 100 + "%";
-            this._timeDuration.innerText = HTMLBvVideoPlayer._dur2str(sender.duration);
+            this._updateTime();
         });
         this._video.addEventListener('play', () => {
             this._updatePlayButtonState();
@@ -316,12 +368,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
         });
         // 1. loadstart
         // 2. durationchange
-        this._video.addEventListener('durationchange', e => {
-            /**
-             * @type {HTMLVideoElement}
-             */
-            const sender = e.currentTarget;
-            this._timeDuration.innerHTML = HTMLBvVideoPlayer._dur2str(sender.duration);
+        this._video.addEventListener('durationchange', () => {
+            this._updateTime();
         });
         // 3. loadedmetadata 
         // 4. loadeddata 
@@ -351,8 +399,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         // Добавляем в DOM
         wrapper.appendChild(this._settingMenu);
-        wrapper.appendChild(panelBotton);
-        wrapper.appendChild(gradientBotton);
+        wrapper.appendChild(this._panelBotton);
+        wrapper.appendChild(this._gradientBotton);
         wrapper.appendChild(this._video);
 
         shadow.appendChild(style);
@@ -366,12 +414,26 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._updateFullScreenButtonState();
     }
 
-    static get observedAttributes() {
-        return ['src', 'speed-controls'];
+    /**
+     * Обновляет индикатор времени. 
+     */
+    _updateTime() {
+        const cur = this._video.currentTime;
+        const dur = this._video.duration;
+
+        if (isNaN(cur) || isNaN(dur)) {
+            this._timeIndicator.style.visibility = 'collapse';
+        } else {
+            this._timeIndicator.style.visibility = 'visible';
+            const curStr = HTMLBvVideoPlayer._dur2str(cur);
+            const durStr = HTMLBvVideoPlayer._dur2str(dur);
+            this._timeIndicator.textContent = `${curStr} / ${durStr}`;
+        }
     }
 
-    get source() { return this._src; }
-    set source(v) { this.setAttribute('src', v); }
+    static get observedAttributes() {
+        return ['src', 'param', 'speed-controls', 'hotkey'];
+    }
 
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue === newValue)
@@ -387,17 +449,41 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._src = newValue;
                 this._video.src = newValue;
                 break;
+
+            case 'param':
+                this._param = newValue;
+                break;
                 
             case 'speed-controls':
                 this._speedControls = newValue.toLowerCase() !== 'false';
                 this._updateSpeedButtonState();
                 break;
 
+            case 'hotkey':
+                this._hotkey = newValue.toLowerCase() !== 'false';
+                break;
         }
     }
-    
+
+    get source() { return this._src; }
+    set source(v) { this.setAttribute('src', v); }
+
+    get param() { return this._param; }
+    set param(v) { this.setAttribute('param', v); }
+
+    get speedcontrols() { return this._speedControls; }
+    set speedcontrols(v) { this.setAttribute('speed-controls', v); }
+
+    get hotkey() { return this._hotkey; }
+    set hotkey(v) { this.setAttribute('hotkey', v); }
+
     connectedCallback() {
         this._updateSpeedButtonState();
+    }
+
+    disconnectedCallback() {
+        clearInterval(this._moveTimerId);
+        this._moveTimerId = 0;
     }
     
     /**
@@ -461,18 +547,27 @@ class HTMLBvVideoPlayer extends HTMLElement {
     bottom: 0;
 }
 
+.fade {
+    transition: visibility 0.15s, opacity 0.15s linear;
+}
+
+.hided {
+    visibility: collapse;
+    opacity: 0;
+}
+
 .panel-wrapper {
     margin: 0 10px;
 }
 
 /* GRADIENT */
 
-.gradient-bottom,
+.gradient-top,
 .gradient-bottom {
     position: absolute;
     left: 0;
     width: 100%;
-    height: 194px;
+    height: 150px;
 }
 
 .gradient-top {
@@ -820,18 +915,18 @@ class HTMLBvVideoPlayer extends HTMLElement {
              */
             const value = sender.getAttribute('data-value');
 
-            if (this._currentQuality === value) {
+            if (this._curParValue === value) {
                 return;
             }
 
-            this._currentQuality = value;
+            this._curParValue = value;
 
             this._updateMenu();
 
             // устанавливаем новое качество
             const curTime = this._video.currentTime;
             const isPaused = this._video.paused;
-            this._video.src = `${this._src}?q=${this._currentQuality}`;
+            this._video.src = `${this._src}?${this._param}=${this._curParValue}`;
             this._video.currentTime = curTime;
             if (!isPaused) {
                 this._video.play();
@@ -852,7 +947,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         const items = Array.from(this._menuItemList.children);
         items.forEach((element, _i, _ar) => {
-            const isSelected = this._currentQuality === element.getAttribute('data-value');
+            const isSelected = this._curParValue === element.getAttribute('data-value');
             element.querySelector('.menu-item-icon').style.visibility = isSelected ? 'visible' : 'hidden';
         });
     }
@@ -872,7 +967,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     _createBottomPanel() {
         const bottomPanel = document.createElement('div');
-        bottomPanel.classList.add('panel-bottom');
+        bottomPanel.classList.add('panel-bottom', 'fade');
 
         const bottomPanelWrapper = document.createElement('div');
         bottomPanelWrapper.classList.add('panel-wrapper');
@@ -1026,28 +1121,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
         const volume = this._createVolumeControl();
 
         /**
-         * Текущее время.
-         * @type {HTMLSpanElement} 
-         */
-        this._timeCurrent = document.createElement('span');
-        this._timeCurrent.textContent = HTMLBvVideoPlayer._dur2str(0);
-        this._timeCurrent.classList.add('time-current');
-
-        /**
-         * Длительность.
+         * Индекатор времени.
          * @type {HTMLSpanElement}
          */
-        this._timeDuration = document.createElement('span');
-        this._timeDuration.textContent = HTMLBvVideoPlayer._dur2str(0);
-        this._timeDuration.classList.add('time-duration');
-
-        const timeIndicator = document.createElement('div');
-        timeIndicator.classList.add('time-indicator');
-        timeIndicator.append(this._timeCurrent, ' / ', this._timeDuration);
+        this._timeIndicator = document.createElement('div');
+        this._timeIndicator.classList.add('time-indicator');
+        this._timeIndicator.style.visibility = 'collapse';
 
         panel.appendChild(this._playButton);
         panel.appendChild(volume);
-        panel.appendChild(timeIndicator);
+        panel.appendChild(this._timeIndicator);
 
         return panel;
     }
@@ -1141,7 +1224,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._slowerButton.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButton);
         this._slowerButton.addEventListener('click', e => {
             if (!e.target.disabled) {
-                this._setPlaySpeed(this._video, this._playSpeedCur - 1);
+                this._setSpeed(this._video, this._playSpeedCur - 1);
             }
         });
 
@@ -1159,7 +1242,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._speedIndicatorButton = document.createElement('button');
         this._speedIndicatorButton.classList.add('ctl-speed-indicator');
         this._speedIndicatorButton.addEventListener('click', e => {
-            this._setPlaySpeed(this._video, this._playSpeedDef);
+            this._setSpeed(this._video, this._playSpeedDef);
         });
         this._speedIndicatorButton.appendChild(this._speedIndicatorContent);
 
@@ -1172,7 +1255,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._fasterButton.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButton);
         this._fasterButton.addEventListener('click', e => {
             if (!e.target.disabled) {
-                this._setPlaySpeed(this._video, this._playSpeedCur + 1);
+                this._setSpeed(this._video, this._playSpeedCur + 1);
             }
         });
 
@@ -1402,7 +1485,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @param {HTMLVideoElement} video Элемент проигрывателя.
      * @param {number} speedIndex Индекс скорости воспроизведния из набора.
      */
-    _setPlaySpeed(video, speedIndex) {
+    _setSpeed(video, speedIndex) {
         this._playSpeedCur = speedIndex;
         video.playbackRate = this._playSpeeds[speedIndex];
     }
@@ -1480,7 +1563,7 @@ class HTMLBvQuality extends HTMLElement {
          */
         const bvVideoPlayer = this.parentElement;
         if (bvVideoPlayer === null || bvVideoPlayer.nodeName !== 'BV-VIDEO-PLAYER') {
-            console.error(`Тег 'bv-quality' должен находиться внутри элумента 'bv-video-player'.`);
+            console.error(`Тег 'bv-quality' должен находиться внутри элемента 'bv-video-player'.`);
             return;
         }
 
@@ -1505,120 +1588,120 @@ window.customElements.define('bv-quality', HTMLBvQuality);
 // Keys
 if (typeof KeyEvent == "undefined") {
     var KeyEvent = {
-        DOM_VK_CANCEL: 3,
-        DOM_VK_HELP: 6,
-        DOM_VK_BACK_SPACE: 8,
-        DOM_VK_TAB: 9,
-        DOM_VK_CLEAR: 12,
-        DOM_VK_RETURN: 13,
-        DOM_VK_ENTER: 14,
-        DOM_VK_SHIFT: 16,
-        DOM_VK_CONTROL: 17,
-        DOM_VK_ALT: 18,
-        DOM_VK_PAUSE: 19,
-        DOM_VK_CAPS_LOCK: 20,
-        DOM_VK_ESCAPE: 27,
+        //DOM_VK_CANCEL: 3,
+        //DOM_VK_HELP: 6,
+        //DOM_VK_BACK_SPACE: 8,
+        //DOM_VK_TAB: 9,
+        //DOM_VK_CLEAR: 12,
+        //DOM_VK_RETURN: 13,
+        //DOM_VK_ENTER: 14,
+        //DOM_VK_SHIFT: 16,
+        //DOM_VK_CONTROL: 17,
+        //DOM_VK_ALT: 18,
+        //DOM_VK_PAUSE: 19,
+        //DOM_VK_CAPS_LOCK: 20,
+        //DOM_VK_ESCAPE: 27,
         DOM_VK_SPACE: 32,
-        DOM_VK_PAGE_UP: 33,
-        DOM_VK_PAGE_DOWN: 34,
-        DOM_VK_END: 35,
-        DOM_VK_HOME: 36,
+        //DOM_VK_PAGE_UP: 33,
+        //DOM_VK_PAGE_DOWN: 34,
+        //DOM_VK_END: 35,
+        //DOM_VK_HOME: 36,
         DOM_VK_LEFT: 37,
         DOM_VK_UP: 38,
         DOM_VK_RIGHT: 39,
         DOM_VK_DOWN: 40,
-        DOM_VK_PRINTSCREEN: 44,
-        DOM_VK_INSERT: 45,
-        DOM_VK_DELETE: 46,
+        //DOM_VK_PRINTSCREEN: 44,
+        //DOM_VK_INSERT: 45,
+        //DOM_VK_DELETE: 46,
         DOM_VK_0: 48,
-        DOM_VK_1: 49,
-        DOM_VK_2: 50,
-        DOM_VK_3: 51,
-        DOM_VK_4: 52,
-        DOM_VK_5: 53,
-        DOM_VK_6: 54,
-        DOM_VK_7: 55,
-        DOM_VK_8: 56,
+        //DOM_VK_1: 49,
+        //DOM_VK_2: 50,
+        //DOM_VK_3: 51,
+        //DOM_VK_4: 52,
+        //DOM_VK_5: 53,
+        //DOM_VK_6: 54,
+        //DOM_VK_7: 55,
+        //DOM_VK_8: 56,
         DOM_VK_9: 57,
-        DOM_VK_EQUALS: 61,
-        DOM_VK_A: 65,
-        DOM_VK_B: 66,
-        DOM_VK_C: 67,
-        DOM_VK_D: 68,
-        DOM_VK_E: 69,
+        //DOM_VK_EQUALS: 61,
+        //DOM_VK_A: 65,
+        //DOM_VK_B: 66,
+        //DOM_VK_C: 67,
+        //DOM_VK_D: 68,
+        //DOM_VK_E: 69,
         DOM_VK_F: 70,
-        DOM_VK_G: 71,
+        //DOM_VK_G: 71,
         DOM_VK_H: 72,
         DOM_VK_I: 73,
         DOM_VK_J: 74,
         DOM_VK_K: 75,
         DOM_VK_L: 76,
         DOM_VK_M: 77,
-        DOM_VK_N: 78,
-        DOM_VK_O: 79,
-        DOM_VK_P: 80,
-        DOM_VK_Q: 81,
-        DOM_VK_R: 82,
-        DOM_VK_S: 83,
-        DOM_VK_T: 84,
-        DOM_VK_U: 85,
-        DOM_VK_V: 86,
-        DOM_VK_W: 87,
-        DOM_VK_X: 88,
-        DOM_VK_Y: 89,
-        DOM_VK_Z: 90,
-        DOM_VK_CONTEXT_MENU: 93,
+        //DOM_VK_N: 78,
+        //DOM_VK_O: 79,
+        //DOM_VK_P: 80,
+        //DOM_VK_Q: 81,
+        //DOM_VK_R: 82,
+        //DOM_VK_S: 83,
+        //DOM_VK_T: 84,
+        //DOM_VK_U: 85,
+        //DOM_VK_V: 86,
+        //DOM_VK_W: 87,
+        //DOM_VK_X: 88,
+        //DOM_VK_Y: 89,
+        //DOM_VK_Z: 90,
+        //DOM_VK_CONTEXT_MENU: 93,
         DOM_VK_NUMPAD0: 96,
-        DOM_VK_NUMPAD1: 97,
-        DOM_VK_NUMPAD2: 98,
-        DOM_VK_NUMPAD3: 99,
-        DOM_VK_NUMPAD4: 100,
-        DOM_VK_NUMPAD5: 101,
-        DOM_VK_NUMPAD6: 102,
-        DOM_VK_NUMPAD7: 103,
-        DOM_VK_NUMPAD8: 104,
+        //DOM_VK_NUMPAD1: 97,
+        //DOM_VK_NUMPAD2: 98,
+        //DOM_VK_NUMPAD3: 99,
+        //DOM_VK_NUMPAD4: 100,
+        //DOM_VK_NUMPAD5: 101,
+        //DOM_VK_NUMPAD6: 102,
+        //DOM_VK_NUMPAD7: 103,
+        //DOM_VK_NUMPAD8: 104,
         DOM_VK_NUMPAD9: 105,
-        DOM_VK_MULTIPLY: 106,
-        DOM_VK_ADD: 107,
-        DOM_VK_SEPARATOR: 108,
-        DOM_VK_SUBTRACT: 109,
-        DOM_VK_DECIMAL: 110,
-        DOM_VK_DIVIDE: 111,
-        DOM_VK_F1: 112,
-        DOM_VK_F2: 113,
-        DOM_VK_F3: 114,
-        DOM_VK_F4: 115,
-        DOM_VK_F5: 116,
-        DOM_VK_F6: 117,
-        DOM_VK_F7: 118,
-        DOM_VK_F8: 119,
-        DOM_VK_F9: 120,
-        DOM_VK_F10: 121,
-        DOM_VK_F11: 122,
-        DOM_VK_F12: 123,
-        DOM_VK_F13: 124,
-        DOM_VK_F14: 125,
-        DOM_VK_F15: 126,
-        DOM_VK_F16: 127,
-        DOM_VK_F17: 128,
-        DOM_VK_F18: 129,
-        DOM_VK_F19: 130,
-        DOM_VK_F20: 131,
-        DOM_VK_F21: 132,
-        DOM_VK_F22: 133,
-        DOM_VK_F23: 134,
-        DOM_VK_F24: 135,
-        DOM_VK_NUM_LOCK: 144,
-        DOM_VK_SCROLL_LOCK: 145,
+        //DOM_VK_MULTIPLY: 106,
+        //DOM_VK_ADD: 107,
+        //DOM_VK_SEPARATOR: 108,
+        //DOM_VK_SUBTRACT: 109,
+        //DOM_VK_DECIMAL: 110,
+        //DOM_VK_DIVIDE: 111,
+        //DOM_VK_F1: 112,
+        //DOM_VK_F2: 113,
+        //DOM_VK_F3: 114,
+        //DOM_VK_F4: 115,
+        //DOM_VK_F5: 116,
+        //DOM_VK_F6: 117,
+        //DOM_VK_F7: 118,
+        //DOM_VK_F8: 119,
+        //DOM_VK_F9: 120,
+        //DOM_VK_F10: 121,
+        //DOM_VK_F11: 122,
+        //DOM_VK_F12: 123,
+        //DOM_VK_F13: 124,
+        //DOM_VK_F14: 125,
+        //DOM_VK_F15: 126,
+        //DOM_VK_F16: 127,
+        //DOM_VK_F17: 128,
+        //DOM_VK_F18: 129,
+        //DOM_VK_F19: 130,
+        //DOM_VK_F20: 131,
+        //DOM_VK_F21: 132,
+        //DOM_VK_F22: 133,
+        //DOM_VK_F23: 134,
+        //DOM_VK_F24: 135,
+        //DOM_VK_NUM_LOCK: 144,
+        //DOM_VK_SCROLL_LOCK: 145,
         DOM_VK_SEMICOLON: 186,
-        DOM_VK_COMMA: 188,
-        DOM_VK_PERIOD: 190,
-        DOM_VK_SLASH: 191,
-        DOM_VK_BACK_QUOTE: 192,
-        DOM_VK_OPEN_BRACKET: 219,
-        DOM_VK_BACK_SLASH: 220,
-        DOM_VK_CLOSE_BRACKET: 221,
-        DOM_VK_QUOTE: 222,
-        DOM_VK_META: 224
+        //DOM_VK_COMMA: 188,
+        //DOM_VK_PERIOD: 190,
+        //DOM_VK_SLASH: 191,
+        //DOM_VK_BACK_QUOTE: 192,
+        //DOM_VK_OPEN_BRACKET: 219,
+        //DOM_VK_BACK_SLASH: 220,
+        //DOM_VK_CLOSE_BRACKET: 221,
+        //DOM_VK_QUOTE: 222,
+        //DOM_VK_META: 224
     };
 }
