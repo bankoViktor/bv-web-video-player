@@ -23,7 +23,7 @@
 
 Клонировать репозиторий
 ```sh
-git clone https://github.com/bankoViktor/bv_web_video_player.git
+git clone https://github.com/bankoViktor/bv-web-video-player.git
 ```
 
 
