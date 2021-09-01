@@ -334,10 +334,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
              * @type {HTMLVideoElement} 
              */
             const sender = e.currentTarget;
-            this._timeCurrent.innerText = HTMLBvVideoPlayer._dur2str(sender.currentTime);
             const position = sender.currentTime / sender.duration;
             this._progressPos.style.width = position * 100 + "%";
-            this._timeDuration.innerText = HTMLBvVideoPlayer._dur2str(sender.duration);
+            this._updateTime();
         });
         this._video.addEventListener('play', () => {
             this._updatePlayButtonState();
@@ -369,12 +368,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
         });
         // 1. loadstart
         // 2. durationchange
-        this._video.addEventListener('durationchange', e => {
-            /**
-             * @type {HTMLVideoElement}
-             */
-            const sender = e.currentTarget;
-            this._timeDuration.innerHTML = HTMLBvVideoPlayer._dur2str(sender.duration);
+        this._video.addEventListener('durationchange', () => {
+            this._updateTime();
         });
         // 3. loadedmetadata 
         // 4. loadeddata 
@@ -417,6 +412,23 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._updateSpeedControls();
         this._updatePipButtonState();
         this._updateFullScreenButtonState();
+    }
+
+    /**
+     * Обновляет индикатор времени. 
+     */
+    _updateTime() {
+        const cur = this._video.currentTime;
+        const dur = this._video.duration;
+
+        if (isNaN(cur) || isNaN(dur)) {
+            this._timeIndicator.style.visibility = 'collapse';
+        } else {
+            this._timeIndicator.style.visibility = 'visible';
+            const curStr = HTMLBvVideoPlayer._dur2str(cur);
+            const durStr = HTMLBvVideoPlayer._dur2str(dur);
+            this._timeIndicator.textContent = `${curStr} / ${durStr}`;
+        }
     }
 
     static get observedAttributes() {
@@ -1109,28 +1121,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
         const volume = this._createVolumeControl();
 
         /**
-         * Текущее время.
-         * @type {HTMLSpanElement} 
-         */
-        this._timeCurrent = document.createElement('span');
-        this._timeCurrent.textContent = HTMLBvVideoPlayer._dur2str(0);
-        this._timeCurrent.classList.add('time-current');
-
-        /**
-         * Длительность.
+         * Индекатор времени.
          * @type {HTMLSpanElement}
          */
-        this._timeDuration = document.createElement('span');
-        this._timeDuration.textContent = HTMLBvVideoPlayer._dur2str(0);
-        this._timeDuration.classList.add('time-duration');
-
-        const timeIndicator = document.createElement('div');
-        timeIndicator.classList.add('time-indicator');
-        timeIndicator.append(this._timeCurrent, ' / ', this._timeDuration);
+        this._timeIndicator = document.createElement('div');
+        this._timeIndicator.classList.add('time-indicator');
+        this._timeIndicator.style.visibility = 'collapse';
 
         panel.appendChild(this._playButton);
         panel.appendChild(volume);
-        panel.appendChild(timeIndicator);
+        panel.appendChild(this._timeIndicator);
 
         return panel;
     }
