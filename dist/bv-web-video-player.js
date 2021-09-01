@@ -299,7 +299,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         // DOM
         this.append(`Технология WebComponents не поддерживается вашим браузером. Обновите браузер.`);
 
-        const shadow = this.attachShadow({ mode: 'closed' });
+        const shadow = this.attachShadow({ mode: 'open' });
 
         const style = this._createStyle();
 
