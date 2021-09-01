@@ -37,11 +37,11 @@ Include js file in html document
 ```
 or you can use the service [![jsDelivr][jsdelivr-badge]][jsdelivr-url]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@{VERSION}/dist/bv-web-video-player.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.3/dist/bv-web-video-player.js
 ```
 or minified version
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@{VERSION}/dist/bv-web-video-player.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.3/dist/bv-web-video-player.min.js
 ```
 
 use the following example:
@@ -73,6 +73,14 @@ where:
 
 <!-- RELEASE NOTES -->
 ## Release notes
+
+#### 2021.09.01 - Release 0.4.3
+- Fixed false triggering of hot keys.
+- Added attribute `hotkey` on/off hotkey handling.
+- Hide controls when idle during playback.
+- Replacement of the standard behavior of the Up/Down/Left/Right/Space keys for playback control.
+- Added the `param` attribute for the name of the parameter in the request.
+- Fixed NaN time display.
 
 #### 2021.08.26 - Release 0.4.2
 - Changed project structure.

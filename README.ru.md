@@ -37,11 +37,11 @@ git clone https://github.com/bankoViktor/bv_web_video_player.git
 ```
 или можно воспользоваться сервисом [![jsDelivr][jsdelivr-badge]][jsdelivr-url]
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@{VERSION}/dist/bv-web-video-player.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.3/dist/bv-web-video-player.js
 ```
 или минимизированная версия
 ```js
-https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@{VERSION}/dist/bv-web-video-player.min.js
+https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@0.4.3/dist/bv-web-video-player.min.js
 ```
 
 используйте следующий пример
@@ -74,6 +74,14 @@ https://cdn.jsdelivr.net/gh/bankoViktor/bv-web-video-player@{VERSION}/dist/bv-we
  
 <!-- RELEASE NOTES -->
 ## Список изменений
+
+#### 2021.09.01 - Release 0.4.3
+- Исравлено ложное срабатывание горичих клавиш.
+- Добавлен атрибут `hotkey` вкл/выкл обработки горячих клавиш.
+- Скрытие элементов управления при бездействии во время воспроизведения.
+- Замена стандартного поведения клавиш Up/Down/Left/Right/Space на управление воспроизведением.
+- Добавлен атрибут `param` для звменты названия параметра в запросе.
+- Исправлено NaN отображение времени.
 
 #### 2021.08.26 - Release 0.4.2
 - Изменена структура проекта.
