@@ -39,7 +39,7 @@
  * 
  */
 
-class HTMLBvVideoPlayer extends HTMLElement {
+window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends HTMLElement {
 
     constructor() {
         super();
@@ -87,51 +87,122 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._volumePressed = false;
 
         /**
-        * Наименование параметра запроса.
-        * @type {string}
-        */
+         * Наименование параметра запроса.
+         * @type {string}
+         */
         this._param = 'q';
 
         /**
-        * Текущее значение параметра запроса.
-        * @type {string}
-        */
+         * Текущее значение параметра запроса.
+         * @type {string}
+         */
         this._curParValue = null;
-        
+
         /**
          * Использование горячих клавиш.
          * @type {boolean}
          */
         this._hotkey = false;
-        
-         /**
-         * Показывать клавиши управления скоростью воспроизведения.
-         * @type {boolean}
-         */
+
+        /**
+        * Показывать клавиши управления скоростью воспроизведения.
+        * @type {boolean}
+        */
         this._speedControls = false;
 
         /**
          * Количество секунд до скрытия элементов управления.
          * @type {number}
          */
-        const fadeCtrlSec = 4;
+        this._fadeCtrlSec = 4;
 
         /**
          * Таймер скрытия элементов управления при воспроизведении, в секундах.
          * @type {number} 
          */
-        this._moveTimerCount = fadeCtrlSec;
+        this._moveTimerCount = this._fadeCtrlSec;
 
-        // ----------------------------------------------------------
-        
+        /**
+         * Флаг инициализации компонента.
+         * @type {boolean} 
+         */
+        this._isInitialized = false;
+    }
+
+    static get observedAttributes() {
+        return ['src', 'param', 'speed-controls', 'hotkey'];
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (oldValue === newValue)
+            return;
+
+        if (newValue === null) {
+            newValue = 'false';
+        }
+
+        switch (name) {
+
+            case 'src':
+                this._src = newValue;
+                break;
+
+            case 'param':
+                this._param = newValue;
+                break;
+
+            case 'speed-controls':
+                this._speedControls = newValue.toLowerCase() !== 'false';
+                if (this._isInitialized) {
+                    this._updateSpeedControls();
+                }
+                break;
+
+            case 'hotkey':
+                this._hotkey = newValue.toLowerCase() !== 'false';
+                if (this._isInitialized) {
+                    this._updateControls();
+                }
+                break;
+        }
+    }
+
+    get source() { return this._src; }
+    set source(v) { this.setAttribute('src', v); }
+
+    get param() { return this._param; }
+    set param(v) { this.setAttribute('param', v); }
+
+    get speedcontrols() { return this._speedControls; }
+    set speedcontrols(v) { this.setAttribute('speed-controls', v); }
+
+    get hotkey() { return this._hotkey; }
+    set hotkey(v) { this.setAttribute('hotkey', v); }
+
+    connectedCallback() {
+        if (!this._isInitialized) {
+            this._initialization();
+        }
+        this._updateControls();
+    }
+
+    disconnectedCallback() {
+        clearInterval(this._moveTimerId);
+        this._moveTimerId = 0;
+    }
+
+    /**
+     * Инициализация компонента.
+     */
+    _initialization() {
         window.addEventListener('keyup', e => {
 
             if (!this._hotkey || e.target !== document.body) {
                 return;
             }
-            
+
             switch (e.keyCode) {
-                
+
                 case KeyEvent.DOM_VK_F:
                     this._fullscrButton.click();
                     break;
@@ -147,41 +218,41 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         this._playButton.click();
                     }
                     break;
-                    
+
                 case KeyEvent.DOM_VK_LEFT:
                     this._video.currentTime = Math.max(this._video.currentTime - this._moveTimeStep, 0);
                     break;
-                
+
                 case KeyEvent.DOM_VK_H:
                     if (!this._video.paused) {
                         this._playButton.click();
                     }
-                    this._video.currentTime = Math.max(this._video.currentTime - 1/25, 0);
-                    break;                
-                
+                    this._video.currentTime = Math.max(this._video.currentTime - 1 / 25, 0);
+                    break;
+
                 case KeyEvent.DOM_VK_RIGHT:
                     this._video.currentTime = Math.min(this._video.currentTime + this._moveTimeStep, this._video.duration);
                     break;
-                    
+
                 case KeyEvent.DOM_VK_SEMICOLON:
                     if (!this._video.paused) {
                         this._playButton.click();
                     }
-                    this._video.currentTime = Math.min(this._video.currentTime + 1/25, this._video.duration);
+                    this._video.currentTime = Math.min(this._video.currentTime + 1 / 25, this._video.duration);
                     break;
-                    
+
                 case KeyEvent.DOM_VK_I:
                     this._pipButton.click();
                     break;
-                    
+
                 case KeyEvent.DOM_VK_J:
                     this._slowerButton.click();
                     break;
-                    
+
                 case KeyEvent.DOM_VK_L:
                     this._fasterButton.click();
                     break;
-                    
+
                 case KeyEvent.DOM_VK_M:
                     this._volumeButton.click();
                     if (this._video.volume == 0) {
@@ -189,7 +260,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         this._video.volume = 1;
                     }
                     break;
-                    
+
                 case KeyEvent.DOM_VK_UP:
                     this._video.volume = Math.min(Math.floor(this._video.volume * 100) / 100 + this._volumeStep, 1);
                     if (this._video.muted) {
@@ -197,7 +268,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     }
                     e.preventDefault();
                     break;
-                    
+
                 case KeyEvent.DOM_VK_DOWN:
                     this._video.volume = Math.max(Math.floor(this._video.volume * 100) / 100 - this._volumeStep, 0);
                     if (this._video.muted) {
@@ -220,9 +291,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
         window.addEventListener('keydown', e => {
             if (e.target === document.body && (
                 e.keyCode === KeyEvent.DOM_VK_SPACE ||
-                e.keyCode === KeyEvent.DOM_VK_UP || 
-                e.keyCode === KeyEvent.DOM_VK_DOWN || 
-                e.keyCode === KeyEvent.DOM_VK_LEFT || 
+                e.keyCode === KeyEvent.DOM_VK_UP ||
+                e.keyCode === KeyEvent.DOM_VK_DOWN ||
+                e.keyCode === KeyEvent.DOM_VK_LEFT ||
                 e.keyCode === KeyEvent.DOM_VK_RIGHT)) {
                 e.preventDefault();
             }
@@ -264,7 +335,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             }
         });
         this.addEventListener('mousemove', () => {
-            this._moveTimerCount = fadeCtrlSec;
+            this._moveTimerCount = this._fadeCtrlSec;
             // Отображение
             this._panelBotton.classList.remove('hided');
             this._gradientBotton.classList.remove('hided');
@@ -363,7 +434,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         });
         this._video.addEventListener('click', () => {
             if (this._settingMenu.style.opacity !== '1') {
-              this._playButton.click();
+                this._playButton.click();
             }
         });
         // 1. loadstart
@@ -406,7 +477,13 @@ class HTMLBvVideoPlayer extends HTMLElement {
         shadow.appendChild(style);
         shadow.appendChild(wrapper);
 
-        // Init buttons state
+        this._isInitialized = true;
+    }
+
+    /**
+     * Обновление состояния элементов управления. 
+     */
+    _updateControls() {
         this._updatePlayButtonState();
         this._updateVolumeButtonState();
         this._updateSpeedControls();
@@ -429,72 +506,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
             const durStr = HTMLBvVideoPlayer._dur2str(dur);
             this._timeIndicator.textContent = `${curStr} / ${durStr}`;
         }
-    }
-
-    static get observedAttributes() {
-        return ['src', 'param', 'speed-controls', 'hotkey'];
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (oldValue === newValue)
-            return;
-        
-        if (newValue === null) {
-            newValue = 'false';
-        }
-
-        switch (name) {
-
-            case 'src':
-                this._src = newValue;
-                this._video.src = newValue;
-                break;
-
-            case 'param':
-                this._param = newValue;
-                break;
-                
-            case 'speed-controls':
-                this._speedControls = newValue.toLowerCase() !== 'false';
-                this._updateSpeedButtonState();
-                break;
-
-            case 'hotkey':
-                this._hotkey = newValue.toLowerCase() !== 'false';
-                break;
-        }
-    }
-
-    get source() { return this._src; }
-    set source(v) { this.setAttribute('src', v); }
-
-    get param() { return this._param; }
-    set param(v) { this.setAttribute('param', v); }
-
-    get speedcontrols() { return this._speedControls; }
-    set speedcontrols(v) { this.setAttribute('speed-controls', v); }
-
-    get hotkey() { return this._hotkey; }
-    set hotkey(v) { this.setAttribute('hotkey', v); }
-
-    connectedCallback() {
-        this._updateSpeedButtonState();
-    }
-
-    disconnectedCallback() {
-        clearInterval(this._moveTimerId);
-        this._moveTimerId = 0;
-    }
-    
-    /**
-     * Обновляет состояние кнопок управления скорости.
-     */
-    _updateSpeedButtonState() {
-        this._slowerButton.disabled = !this._speedControls;
-        this._slowerButton.hidden = !this._speedControls;
-        this._speedIndicatorContent.hidden = !this._speedControls;
-        this._fasterButton.hidden = !this._speedControls;
-        this._fasterButton.disabled = !this._speedControls;
     }
 
     /**
@@ -899,7 +910,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         const textDiv = document.createElement('div');
         textDiv.classList.add('menu-item-body');
         textDiv.innerHTML = html;
-        
+
         const li = document.createElement('li');
         li.setAttribute('data-value', value);
         li.addEventListener('click', e => {
@@ -1221,7 +1232,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._slowerButton = document.createElement('button');
         this._slowerButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 28.5,26 15.5,18 28.5,10 z M 18.5,26 5.5,18 18.5,10 z"></path></g></svg>`;
-        this._slowerButton.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButton);
         this._slowerButton.addEventListener('click', e => {
             if (!e.target.disabled) {
                 this._setSpeed(this._video, this._playSpeedCur - 1);
@@ -1251,8 +1261,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @type {HTMLButtonElement}
          */
         this._fasterButton = document.createElement('button');
-        this._fasterButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 7.5,26 20.5,18 7.5,10 z M 17.5,26 30.5,18 17.5,10 z"></path></g></svg>`;
-        this._fasterButton.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButton);
+        this._fasterButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 7.5,26 20.5,18 7.5,10 z M 17.5,26 30.5,18 17.5,10 z"></path></g></svg>`
         this._fasterButton.addEventListener('click', e => {
             if (!e.target.disabled) {
                 this._setSpeed(this._video, this._playSpeedCur + 1);
@@ -1307,45 +1316,45 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         return panel;
     }
-    
+
     /**
      * Горячая клавиша.
      * @type {HTMLElement} element
      */
-    _hotkeyPrint(element) {        
+    _hotkeyPrint(element) {
         if (!this._hotkey) {
             return '';
         }
-        
+
         let key;
-        
+
         switch (element) {
-            
+
             case this._fasterButton:
                 key = 'L';
                 break;
-                
+
             case this._playButton:
                 key = 'K';
                 break;
-            
+
             case this._slowerButton:
                 key = 'J';
                 break;
-                
+
             case this._volumeButton:
                 key = 'M';
                 break;
-                
+
             case this._pipButton:
                 key = 'I';
                 break;
-                
+
             case this._fullscrButton:
                 key = 'F';
                 break;
         }
-        
+
         return ` (${key})`;
     }
 
@@ -1412,12 +1421,20 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * Устанавливает состояние кнопок управления скоростью воспроизведения.
      */
     _updateSpeedControls() {
+        // Slower
+        this._slowerButton.hidden = !this._speedControls;
         this._slowerButton.disabled = this._playSpeedCur <= 0;
+        this._slowerButton.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButton);
+        // Faster
+        this._fasterButton.hidden = !this._speedControls;
         this._fasterButton.disabled = this._playSpeedCur >= this._playSpeeds.length - 1;
+        this._fasterButton.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButton);
+        // Speed Indicator
+        this._speedIndicatorContent.hidden = !this._speedControls;
         this._speedIndicatorButton.disabled = this._playSpeedCur == this._playSpeedDef;
         this._speedIndicatorContent.title = this._playSpeedCur == this._playSpeedDef
             ? 'Текущая скорость воспроизведения'
-            : 'К нормальной скорости воспроизведения' + this._hotkeyPrint(this._playButton),
+            : 'К нормальной скорости воспроизведения' + this._hotkeyPrint(this._playButton);
         this._speedIndicatorContent.innerText = "x" + this._video.playbackRate;
     }
 
@@ -1518,12 +1535,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
         }
     }
 
-}
+});
 
 
 
 
-class HTMLBvQuality extends HTMLElement {
+window.customElements.define('bv-quality', class HTMLBvQuality extends HTMLElement {
 
     constructor() {
         super();
@@ -1550,7 +1567,7 @@ class HTMLBvQuality extends HTMLElement {
         switch (name) {
 
             case 'value':
-                
+
                 this._value = newValue;
                 break;
 
@@ -1574,14 +1591,7 @@ class HTMLBvQuality extends HTMLElement {
         bvVideoPlayer.dispatchEvent(event);
     }
 
-}
-
-
-
-
-window.customElements.define('bv-video-player', HTMLBvVideoPlayer);
-window.customElements.define('bv-quality', HTMLBvQuality);
-
+});
 
 
 
