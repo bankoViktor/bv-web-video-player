@@ -438,12 +438,20 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
             }
         });
         // 1. loadstart
+        this._video.addEventListener('loadstart', e => {
+            this._spinnerShow();
+        });
         // 2. durationchange
         this._video.addEventListener('durationchange', () => {
             this._updateTime();
         });
         // 3. loadedmetadata 
+        this._video.addEventListener('loadedmetadata', e => {
+        });
         // 4. loadeddata 
+        this._video.addEventListener('loadeddata', e => {
+            this._playButton.disabled = false;
+        });
         // 5. progress
         this._video.addEventListener('progress', e => {
             /**
@@ -464,9 +472,21 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
 
                 this._buffersSegsList.appendChild(li);
             }
+
+            // Спиннер при загрузке видео
+            if (sender.readyState === sender.HAVE_CURRENT_DATA) {
+                this._spinnerShow();
+            } else if (sender.readyState === sender.HAVE_FUTURE_DATA) {
+                this._spinnerHide();
+            }
         });
         // 6. canplay
+        this._video.addEventListener('canplay', e => {
+            this._spinnerHide();
+        });
         // 7. canplaythrough 
+        this._video.addEventListener('canplaythrough', e => {
+        });
 
         // Добавляем в DOM
         wrapper.appendChild(this._settingMenu);
@@ -474,11 +494,37 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
         wrapper.appendChild(this._gradientBotton);
         wrapper.appendChild(this._video);
 
+        // Load Spinner
+        const svgNS = 'http://www.w3.org/2000/svg';
+        this._spinnerWrapper = document.createElementNS(svgNS, 'svg');
+        this._spinnerWrapper.setAttribute('viewBox', '0 0 50 50');
+        this._spinnerWrapper.classList.add('spinner');
+        this._spinnerHide();
+
+        const circle = document.createElementNS(svgNS, 'circle');
+        circle.setAttribute('cx', 25);
+        circle.setAttribute('cy', 25);
+        circle.setAttribute('r', 20);
+        circle.setAttribute('fill', 'none');
+        circle.setAttribute('stroke-width', 5);
+        this._spinnerWrapper.appendChild(circle);
+        wrapper.appendChild(this._spinnerWrapper);
+
         shadow.appendChild(style);
         shadow.appendChild(wrapper);
 
         this._isInitialized = true;
     }
+
+    /**
+     * Показывает спиннер загрузки.
+     */
+    _spinnerShow() { this._spinnerWrapper.style.visibility = 'visible'; }
+
+    /**
+     * Crhsdftn спиннер загрузки. 
+     */
+    _spinnerHide() { this._spinnerWrapper.style.visibility = 'collapse'; }
 
     /**
      * Обновление состояния элементов управления. 
@@ -873,6 +919,46 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
     color: var(--controls-color);
     border-radius: 2px;
 }
+
+/* LOADER */
+
+.spinner {
+  animation: rotate 2s linear infinite;
+  z-index: 2;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -25px 0 0 -25px;
+  width: 50px;
+  height: 50px;
+}
+
+.spinner > circle {
+    stroke: rgba(255, 255, 255, 0.8);
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+  }
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
 `;
         return style;
     }
@@ -1120,6 +1206,7 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
          * @type {HTMLButtonElement}
          */
         this._playButton = document.createElement('button');
+        this._playButton.disabled = true;
         this._playButton.addEventListener('click', e => {
             if (this._video.paused) {
                 this._video.play();
