@@ -16,9 +16,19 @@
 
     <div class="block-for-video">
       <bv-video-player src="https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_1920_18MG.mp4" speed-controls hotkey>
-        <bv-quality value="1080">1080p</bv-quality>
-        <bv-quality value="720">720p</bv-quality>
-        <bv-quality value="480">480p</bv-quality>
+
+        <bv-quality-list>
+          <bv-quality value="1080">1080p<sup style="color: red;">FHD</sup></bv-quality>
+          <bv-quality value="720">720p<sup style="color: red;">HD</sup></bv-quality>
+          <bv-quality value="480">480p</bv-quality>
+        </bv-quality-list>
+
+        <!--<bv-episode-list>-->
+        <!--<bv-episode duration="5" title="Введение"></bv-episode>
+        <bv-episode duration="15" title="Основная часть"></bv-episode>
+        <bv-episode duration="10" title="Заключение"></bv-episode>-->
+        <!--<bv-episode title="Заключение"></bv-episode>-->
+        <!--</bv-episode-list>-->
       </bv-video-player>
     </div>
 

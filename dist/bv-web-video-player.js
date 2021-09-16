@@ -20,23 +20,76 @@
  *   [Up]                               Volume increase with 5 step.
  *   [Down]                             Volume decrease with 5 step.
  *
- * 
- * 
- * TODOs:
- * 
- * TODO кнопка "С начала" при завершении видео
- * TODO всплывающая подсказка мутирования 0.5
- * TODO всплывающая подсказка далее/назад 5сек, плей/стоп
- * TODO название видео в левом верхнем углу плеера
- * TODO спинер при ожидании загрузки
- * 
- * 
  */
 
-window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends HTMLElement {
+
+
+
+
+/**
+ * @typedef  {object} ChangedEventOptions
+ * @property {'added'|'modified'|'removed'} action
+ * @property {HTMLBvQuality} element
+ * 
+ * 
+ * @typedef  {object} EpisodeData
+ * @property {string} title
+ * @property {number} duration
+ * 
+ * @typedef  {object} QualityItem
+ * @property {string} value
+ * @property {string} title
+ * 
+ * 
+ * @typedef  {object} EpisodeItem
+ * @property {number} duration
+ * @property {string} title
+ */
+
+const isDebug = true;
+
+
+
+class BvLogger {
+    /**
+     * @param {string} name Название логгера.
+     * @param {boolean} isPrint Выводит сообщения в консоль. По-умолчанию: TRUE.
+     */
+    constructor(name, isPrint = true) {
+
+        /**
+         * Название логгера.
+         * @type {string} 
+         */
+        this.name = name;
+
+
+        if (isPrint) {
+            const format = [this.name, '::'];
+            this.log = console.log.bind(window.console, ...format);
+            //this.debug = console.log.bind(window.console, ...format);
+            //this.warm = console.warm.bind(window.console, format);
+            this.error = console.error.bind(window.console, ...format);
+        } else {
+            this.log = this.error = function () { };
+        }
+    }
+}
+
+
+
+class HTMLBvVideoPlayer extends HTMLElement {
 
     constructor() {
         super();
+
+        /**
+         * Логгер класса.
+         * @type {BvLogger} 
+         */
+        this._logger = new BvLogger('VideoPlayer', isDebug);
+
+        //#region Properties
 
         /**
          * Адресс источника видео, при запросе добавляется '?q={_currentQuality}'
@@ -121,74 +174,11 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
          * @type {boolean} 
          */
         this._isInitialized = false;
-    }
 
-    static get observedAttributes() {
-        return ['src', 'param', 'speed-controls', 'hotkey'];
-    }
+        //#endregion Properties
 
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (oldValue === newValue)
-            return;
+        //#region Window Events Handlers
 
-        if (newValue === null) {
-            newValue = 'false';
-        }
-
-        switch (name) {
-
-            case 'src':
-                this._src = newValue;
-                break;
-
-            case 'param':
-                this._param = newValue;
-                break;
-
-            case 'speed-controls':
-                this._speedControls = newValue.toLowerCase() !== 'false';
-                if (this._isInitialized) {
-                    this._updateSpeedControls();
-                }
-                break;
-
-            case 'hotkey':
-                this._hotkey = newValue.toLowerCase() !== 'false';
-                if (this._isInitialized) {
-                    this._updateControls();
-                }
-                break;
-        }
-    }
-
-    get source() { return this._src; }
-    set source(v) { this.setAttribute('src', v); }
-
-    get param() { return this._param; }
-    set param(v) { this.setAttribute('param', v); }
-
-    get speedcontrols() { return this._speedControls; }
-    set speedcontrols(v) { this.setAttribute('speed-controls', v); }
-
-    get hotkey() { return this._hotkey; }
-    set hotkey(v) { this.setAttribute('hotkey', v); }
-
-    connectedCallback() {
-        if (!this._isInitialized) {
-            this._initialization();
-        }
-        this._updateControls();
-    }
-
-    disconnectedCallback() {
-        clearInterval(this._moveTimerId);
-        this._moveTimerId = 0;
-    }
-
-    /**
-     * Инициализация компонента.
-     */
-    _initialization() {
         window.addEventListener('keyup', e => {
 
             if (!this._hotkey || e.target !== document.body) {
@@ -281,7 +271,6 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
             }
 
         });
-
         window.addEventListener('keydown', e => {
             if (e.target === document.body && (
                 e.keyCode === KeyEvent.DOM_VK_SPACE ||
@@ -292,6 +281,10 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
                 e.preventDefault();
             }
         });
+
+        //#endregion Window Events Handlers
+
+        //#region This Events Handlers
 
         this.addEventListener('fullscreenchange', () => {
             this._updateFullScreenButtonState();
@@ -313,21 +306,6 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
                 this._showMenu(false);
             }
         });
-        this.addEventListener('addquality', e => {
-            /**
-             * @type {HTMLBvQuality} 
-             */
-            const qualityElement = e.detail;
-
-            // Создание пунктов меню
-            const menuItem = this._createMenuItem(qualityElement.innerHTML, qualityElement.value);
-            this._menuItemList.appendChild(menuItem);
-
-            // Первый по-умолчанию
-            if (this._curParValue === null) {
-                menuItem.click();
-            }
-        });
         this.addEventListener('mousemove', () => {
             this._moveTimerCount = this._fadeCtrlSec;
             // Отображение
@@ -338,6 +316,401 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
                 this.style.cursor = '';
             }
         });
+
+        // Quality
+        this.addEventListener('qualitylist-changed', e => {
+            this._logger.log('QualityList changed');
+
+            /**
+             * @type {ChangedEventOptions} 
+             */
+            const options = e.detail;
+            switch (options.action) {
+
+                case 'added':
+                    const menuItem = this.createMenuItem(options.element.value, options.element.innerHTML);
+                    this._menuItemList.appendChild(menuItem);
+                    // Первый по-умолчанию
+                    if (this._curParValue === null) {
+                        menuItem.click();
+                    }
+                    break;
+
+                case 'removed':
+
+                    break;
+
+                case 'modified':
+
+                    break;
+
+            }
+        });
+
+        // Episode
+        //this.addEventListener('episodelist-add', e => {
+        //    this._logger.log('EpisodeList add');
+
+        //    /**
+        //     * Коллекция эпизодов.
+        //     * @type {HTMLBvEpisodeList} 
+        //     */
+        //    this._episodeList = e.detail;
+        //});
+        //this.addEventListener('episodelist-remove', e => {
+        //    logger.log('VideoPlayer :: EpisodeList remove');
+
+        //    this._episodeList = null;
+        //});
+        //this.addEventListener('episode-add', e => {
+        //    logger.log('VideoPlayer :: episode add');
+
+        //    /**
+        //     * Коллекция вариация качества.
+        //     * @type {HTMLBvEpisode} 
+        //     */
+        //    const episode = e.detail;
+        //});
+        //this.addEventListener('episode-remove', e => {
+        //    logger.log('VideoPlayer :: episode remove');
+
+        //    /**
+        //     * Коллекция вариация качества.
+        //     * @type {HTMLBvEpisode} 
+        //     */
+        //    const episode = e.detail;
+        //});
+
+        //#endregion This Events
+
+        this._logger.log('constructor');
+    }
+
+    static get observedAttributes() {
+        return ['src', 'param', 'speed-controls', 'hotkey'];
+    }
+
+    get source() { return this._src; }
+    set source(v) { this.setAttribute('src', v); }
+
+    get param() { return this._param; }
+    set param(v) { this.setAttribute('param', v); }
+
+    get speedControls() { return this._speedControls; }
+    set speedControls(v) { this.setAttribute('speed-controls', v); }
+
+    get hotkey() { return this._hotkey; }
+    set hotkey(v) { this.setAttribute('hotkey', v); }
+
+    /**
+     * Компоненту добавляют, удаляют или изменяют атрибут.
+     * @param {string} name
+     * @param {string} oldValue
+     * @param {string} newValue
+     */
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (oldValue === newValue)
+            return;
+
+        if (newValue === null) {
+            newValue = 'false';
+        }
+
+        switch (name) {
+
+            case 'src':
+                this._src = newValue;
+                break;
+
+            case 'param':
+                this._param = newValue;
+                break;
+
+            case 'speed-controls':
+                this._speedControls = newValue.toLowerCase() !== 'false';
+                if (this._isInitialized) {
+                    this._updateSpeedControls();
+                }
+                break;
+
+            case 'hotkey':
+                this._hotkey = newValue.toLowerCase() !== 'false';
+                if (this._isInitialized) {
+                    this._updateControls();
+                }
+                break;
+        }
+    }
+
+    /**
+     * Компонент добавляется в DOM.
+     */
+    connectedCallback() {
+        if (!this._isInitialized) {
+            this._initialization();
+        }
+        this._updateControls();
+
+        this._logger.log('connected');
+    }
+
+    /**
+     * Компонент удаляется из DOM.
+     */
+    disconnectedCallback() {
+        clearInterval(this._moveTimerId);
+        this._moveTimerId = 0;
+
+        this._logger.log('disconnected');
+    }
+
+    /**
+     * Показывает спиннер загрузки.
+     */
+    _spinnerShow() { this._spinnerWrapper.style.visibility = 'visible'; }
+
+    /**
+     * Скрывает спиннер загрузки. 
+     */
+    _spinnerHide() { this._spinnerWrapper.style.visibility = 'collapse'; }
+
+    /**
+     * Скрыть/показать меню.
+     * @param {boolean}
+     */
+    _showMenu(isShow = true) {
+        this._popupMenu.style.visibility = isShow ? 'visible' : 'collapse';
+        this._popupMenu.style.opacity = isShow ? '1' : '0';
+    }
+
+    /**
+     * Возвращает название горячей клавиши.
+     * @type {HTMLElement} element
+     */
+    _hotkeyPrint(element) {
+        if (!this._hotkey) {
+            return '';
+        }
+
+        let key;
+
+        switch (element) {
+
+            case this._fasterButton:
+                key = 'L';
+                break;
+
+            case this._playButton:
+                key = 'K';
+                break;
+
+            case this._slowerButton:
+                key = 'J';
+                break;
+
+            case this._volumeButton:
+                key = 'M';
+                break;
+
+            case this._pipButton:
+                key = 'I';
+                break;
+
+            case this._fullscrButton:
+                key = 'F';
+                break;
+        }
+
+        return ` (${key})`;
+    }
+
+    /**
+     * Преобразовывает длительность в формате 'HH:MM:SS' в число.
+     * @param {string} str
+     * @returns {number}
+     */
+    static _str2dur(str) {
+        let parts = str.split(":", 3).reverse();
+        let result = 0;
+        let m = [1, 60, 3600];
+        for (let i = 0; i < parts.length; i++) {
+            result += parseInt(parts[i]) * m[i];
+        }
+        return result;
+    }
+
+    /**
+     * Преобразовывает длительность в строку формата 'HH:MM:SS'.
+     * @param {number} duration
+     * @returns {string}
+     */
+    static _dur2str(duration) {
+        let m = Math.trunc(duration / 60);
+        let h = Math.trunc(m / 60);
+        let s = Math.trunc(duration - (h * 60 + m) * 60);
+        let result = m + ":" + (s < 10 ? "0" + s : s);
+        if (m >= 60) {
+            result = h + ":" + result;
+        }
+        return result;
+    }
+
+    /**
+     * Устанавливает скорость воспроизведения из набора по индексу.
+     * @param {HTMLVideoElement} video Элемент проигрывателя.
+     * @param {number} speedIndex Индекс скорости воспроизведния из набора.
+     */
+    _setSpeed(video, speedIndex) {
+        this._playSpeedCur = speedIndex;
+        video.playbackRate = this._playSpeeds[speedIndex];
+    }
+
+    /**
+     * Устанавливает громкость.
+     * @param {Event} e события
+     */
+    _setVolume(e) {
+        let x = e.offsetX;
+
+        if (e.target === this._volumeSliderThumb) {
+            x = e.target.offsetLeft + e.offsetX + 6;
+        }
+
+        const width = e.currentTarget.clientWidth - 1;
+        let val = x / width;
+
+        if (val < 0) {
+            val = 0;
+        } else if (val > 1) {
+            val = 1;
+        }
+
+        this._video.volume = val;
+        this._volumeSliderFill.style.width = `${val * 100}%`;
+
+        if (this._video.muted) {
+            this._video.muted = false;
+        }
+    }
+
+    //#region Update Functions
+
+    /**
+     * Обновление состояния элементов управления. 
+     */
+    _updateControls() {
+        this._updatePlayButtonState();
+        this._updateVolumeButtonState();
+        this._updateSpeedControls();
+        this._updatePipButtonState();
+        this._updateFullScreenButtonState();
+    }
+
+    /**
+     * Обновляет индикатор времени. 
+     */
+    _updateTime() {
+        const cur = this._video.currentTime;
+        const dur = this._video.duration;
+
+        if (isNaN(cur) || isNaN(dur)) {
+            this._timeIndicator.style.visibility = 'collapse';
+        } else {
+            this._timeIndicator.style.visibility = 'visible';
+            const curStr = HTMLBvVideoPlayer._dur2str(cur);
+            const durStr = HTMLBvVideoPlayer._dur2str(dur);
+            this._timeIndicator.textContent = `${curStr} / ${durStr}`;
+        }
+    }
+
+    /**
+     * Обновить состояние пунктов меню. 
+     */
+    _updateMenu() {
+        /**
+         * @type {Array<HTMLDivElement>} 
+         */
+        const items = Array.from(this._menuItemList.children);
+        items.forEach((element, _i, _ar) => {
+            const isSelected = this._curParValue === element.getAttribute('data-value');
+            element.querySelector('.menu-item-icon').style.visibility = isSelected ? 'visible' : 'hidden';
+        });
+    }
+
+    /**
+     * Устанавливает состояние кнопки воспроизведение/стоп.
+     */
+    _updatePlayButtonState() {
+        this._playButton.title = (this._video.paused ? 'Смотреть' : 'Пауза') + this._hotkeyPrint(this._playButton);
+        this._playButton.innerHTML = this._video.paused
+            ? `<svg viewBox='0 0 36 36'><path d='m12 26 6.5-4v-8l-6.5-4zm6.5-4 6.5-4-6.5-4z'/></svg>`
+            : `<svg viewBox='0 0 36 36'><path d='m12 26h4v-16h-4zm9 0h4v-16h-4z'/></svg>`;
+    }
+
+    /**
+     * Устанавливает состояние кнопки громкости.
+     */
+    _updateVolumeButtonState() {
+        const vol = this._video.volume;
+        this._volumeButton.title = (this._video.muted || vol === 0 ? 'Включение звука' : 'Отключение звука') + this._hotkeyPrint(this._volumeButton);
+        this._volumeButton.innerHTML = this._video.muted || vol === 0
+            ? '<svg viewBox="0 0 36 36"><path d="M21.48 17.98a4.5 4.5 0 0 0-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51a8.796 8.796 0 0 0 1.03-4.15c0-4.28-2.99-7.86-7-8.76v2.05c2.89.86 5 3.54 5 6.71zm-14.73-9-1.27 1.26 4.72 4.73H7.98v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81l2.04 2.05 1.27-1.27-9-9-7.72-7.72zm7.72.99-2.09 2.08 2.09 2.09V9.98z"/></svg>'
+            : (vol < 0.5
+                ? '<svg viewBox="0 0 36 36"><path d="M8 21h4l5 5V10l-5 5H8v6Zm11-7v8c1.48-.68 2.5-2.23 2.5-4 0-1.74-1.02-3.26-2.5-4Z"/></svg>'
+                : '<svg viewBox="0 0 36 36"><path d="M8 21h4l5 5V10l-5 5H8v6Zm11-7v8c1.48-.68 2.5-2.23 2.5-4 0-1.74-1.02-3.26-2.5-4Zm0-2.71c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77v2.06Z"/></svg>');
+        this._volumeSliderFill.style.width = this._video.volume * 100 + '%';
+    }
+
+    /**
+     * Устанавливает состояние кнопки картинтка-в-картинке.
+     * @param {boolean} isActive
+     */
+    _updatePipButtonState(isActive = false) {
+        this._pipButton.title = (isActive ? 'Закрыть мини проигрыватель' : 'Открыть мини проигрыватель') + this._hotkeyPrint(this._pipButton);
+        this._pipButton.innerHTML = isActive
+            ? `<svg viewBox='0 0 36 36'><path d='M11 13v10h14V13zm18 12V10.98C29 9.88 28.1 9 27 9H9c-1.1 0-2 .88-2 1.98V25c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H9V10.97h18v14.05z'/></svg>`
+            : `<svg viewBox="0 0 36 36"><path d="M25 17h-8v6h8v-6zm4 8V10.98C29 9.88 28.1 9 27 9H9c-1.1 0-2 .88-2 1.98V25c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H9V10.97h18v14.05z"/></svg>`;
+    }
+
+    /**
+     * Устанавливает состояние кнопок управления скоростью воспроизведения.
+     */
+    _updateSpeedControls() {
+        // Slower
+        this._slowerButton.hidden = !this._speedControls;
+        this._slowerButton.disabled = this._playSpeedCur <= 0;
+        this._slowerButton.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButton);
+        // Faster
+        this._fasterButton.hidden = !this._speedControls;
+        this._fasterButton.disabled = this._playSpeedCur >= this._playSpeeds.length - 1;
+        this._fasterButton.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButton);
+        // Speed Indicator
+        this._speedIndicatorContent.hidden = !this._speedControls;
+        this._speedIndicatorButton.disabled = this._playSpeedCur == this._playSpeedDef;
+        this._speedIndicatorContent.title = this._playSpeedCur == this._playSpeedDef
+            ? 'Текущая скорость воспроизведения'
+            : 'К нормальной скорости воспроизведения' + this._hotkeyPrint(this._playButton);
+        this._speedIndicatorContent.innerText = "x" + this._video.playbackRate;
+    }
+
+    /**
+     * Устанавливает состояние кнопки полноэкранного режима.
+     */
+    _updateFullScreenButtonState() {
+        this._fullscrButton.title = (document.fullscreen ? 'Выход из полноэкранного режима' : 'Во весь экран') + this._hotkeyPrint(this._fullscrButton);
+        this._fullscrButton.innerHTML = document.fullscreen
+            ? '<svg viewBox="0 0 36 36"><path d="M14 14h-4v2h6v-6h-2v4zM22 14v-4h-2v6h6v-2h-4zM20 26h2v-4h4v-2h-6v6zM10 22h4v4h2v-6h-6v2z"/></svg>'
+            : '<svg viewBox="0 0 36 36"><path d="M10 16h2v-4h4v-2h-6v6zM20 10v2h4v4h2v-6h-6zM24 24h-4v2h6v-6h-2v4zM12 20h-2v6h6v-2h-4v-4z"/></svg>';
+    }
+
+    //#endregion Update Functions
+
+    //#region Create Functions
+
+    /**
+     * Инициализация компонента.
+     */
+    _initialization() {
         this._moveTimerId = setInterval(() => {
             if (this._video.paused) {
                 return;
@@ -345,7 +718,6 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
 
             if (this._moveTimerCount > 0) {
                 this._moveTimerCount -= 1;
-                //console.log('-1 = ' + this._moveTimerCount);
             } else {
                 if (this._moveTimerCount != null) {
                     this._moveTimerCount = null;
@@ -356,44 +728,458 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
                     if (document.fullscreenElement) {
                         this.style.cursor = 'none';
                     }
-                    //console.log('hided');
                 }
             }
         }, 1000);
 
         // DOM
-        this.append(`Технология WebComponents не поддерживается вашим браузером. Обновите браузер.`);
-
         const shadow = this.attachShadow({ mode: 'open' });
 
-        const style = this._createStyle();
+        // Style 
+        const style = document.createElement('style');
+        style.textContent = '@import "styles.css" all;';
+        shadow.appendChild(style);
 
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('wrapper');
+        /**
+         * Корневой элемент.
+         */
+        const root = document.createElement('div');
+        root.classList.add('root');
+
+        //#region Create Popup Menu
 
         /**
          * Всплывающее меню настроек.
          * @type {HTMLDivElement} 
          */
-        this._settingMenu = this._createSettingsMenu();
+        this._popupMenu = document.createElement('div');
+        this._popupMenu.classList.add('menu');
+        root.appendChild(this._popupMenu);
+
+        /**
+        * Список пунктов всплывающего меню.
+        * @type {HTMLUListElement} 
+        */
+        this._menuItemList = document.createElement('ul');
+        this._popupMenu.appendChild(this._menuItemList);
+
+        //#endregion Create Popup Menu
+
+        //#region Create Bottom Panel
 
         /**
          * @type {HTMLDivElement}
          */
-        this._panelBotton = this._createBottomPanel();
+        this._panelBotton = document.createElement('div');
+        this._panelBotton.classList.add('panel-bottom', 'fade');
+        root.appendChild(this._panelBotton);
+
+        const panelWrapper = document.createElement('div');
+        panelWrapper.classList.add('panel-wrapper');
+        this._panelBotton.appendChild(panelWrapper);
+
+        //#region --- Create Preview, Episode name & Time
+
+        /**
+         * Контейнер всплывающего контейнера с превью и временем.
+         * @type {HTMLDivElement}
+         */
+        this._hoverContainer = document.createElement('div');
+        this._hoverContainer.classList.add('hover-container');
+        this._hoverContainer.style.marginLeft = '50px';
+        this._hoverContainer.style.marginRight = 'auto';
+        panelWrapper.appendChild(this._hoverContainer);
+
+        /**
+         * Миниатюра.
+         * @type {HTMLDivElement}
+         */
+        this._hoverPreview = document.createElement('div');
+        this._hoverPreview.classList.add('progress-hover-preview');
+        this._hoverPreview.style.background = 'url(https://picsum.photos/id/37/158/90)';
+        this._hoverContainer.appendChild(this._hoverPreview);
+
+        /**
+         * Название эпизода.
+         * @type {HTMLDivElement}
+         */
+        this._hoverCaption = document.createElement('div');
+        this._hoverCaption.classList.add('progress-hover-caption');
+        this._hoverCaption.textContent = 'Название эпизода';
+        this._hoverContainer.appendChild(this._hoverCaption);
+
+        /**
+         * Время.
+         * @type {HTMLDivElement}
+         */
+        this._hoverTime = document.createElement('div');
+        this._hoverTime.classList.add('progress-hover-time');
+        this._hoverTime.textContent = '1:12:42';
+        this._hoverContainer.appendChild(this._hoverTime);
+
+        //#endregion --- Create Preview, Episode name & Time
+
+        //#region --- Create Progress Bar
+
+        const progressBarContainer = document.createElement('div');
+        progressBarContainer.classList.add('progress-container');
+        progressBarContainer.addEventListener('mousemove', e => {
+            const currnetHoverEpisode = getCurrentHoverEpisode(e);
+            if (currnetHoverEpisode !== null) {
+                // Set Current Episode & Reset other & Hover
+                for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                    /**
+                     * @type{HTMLLIElement}
+                     */
+                    const episode = this._episodesContainer.children[i];
+                    if (episode === currnetHoverEpisode) {
+                        currnetHoverEpisode.classList.add('episode-hover');
+                    } else {
+                        episode.classList.remove('episode-hover');
+                    }
+                }
+            }
+            // Set Progress Bar
+            if (this._episodesContainer.children.length > 1) {
+                this._progressBar.classList.add('progress-bar-hover');
+            }
+        });
+        progressBarContainer.addEventListener('mouseleave', e => {
+            // Reset Progress Bar
+            this._progressBar.classList.remove('progress-bar-hover');
+
+            // Reset All Episodes
+            for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                this._episodesContainer.children[i].classList.remove('episode-hover');
+            }
+        });
+        panelWrapper.appendChild(progressBarContainer);
+
+        /**
+         * Прогресс бар. Содержит список эпизодов и ползунок.
+         * @type {HTMLDivElement}
+         */
+        this._progressBar = document.createElement('div');
+        this._progressBar.classList.add('progress-bar');
+        progressBarContainer.appendChild(this._progressBar);
+
+        /**
+         * Список эпизодов.
+         * @type {HTMLUListElement}
+         */
+        this._episodesContainer = document.createElement('ul');
+        this._episodesContainer.classList.add('episodes-container');
+        this._progressBar.appendChild(this._episodesContainer);
+        //this.appendEpisode();
+
+        const progressScrubber = document.createElement('div');
+        progressScrubber.classList.add('progress-scrubber');
+        progressBarContainer.appendChild(progressScrubber);
+
+        // ---------------------
+
+        /**
+         * @param {Event} e
+         * @returns {HTMLLIElement} 
+         */
+        function getCurrentHoverEpisode(e) {
+            for (let i = 0; i < e.path.length; i++) {
+                const element = e.path[i];
+                if (element.tagName === 'UL' &&
+                    element.classList.contains('episodes-container') &&
+                    i - 1 >= 0) {
+                    return e.path[i - 1];
+                }
+            }
+            return null;
+        }
+
+        //const progressTrack = document.createElement('div');
+        //progressTrack.classList.add('progress-track');
+        //progressTrack.addEventListener('mousemove', e => {
+        //    const x = e.target.offsetLeft + e.offsetX;
+        //    const width = e.currentTarget.clientWidth;
+        //    const newPosRatio = x / width;
+
+        //    this._progressCursor.style.width = newPosRatio * 100 + "%";
+        //    this._timeCode.removeAttribute('hidden');
+
+        //    const timeCodeWidth = this._timeCode.clientWidth;
+        //    let timeCodePos = x - timeCodeWidth / 2;
+        //    if (x < timeCodeWidth / 2) {
+        //        timeCodePos = 0;
+        //    } else if (x > width - timeCodeWidth / 2) {
+        //        timeCodePos = width - timeCodeWidth;
+        //    }
+
+        //    this._timeCode.style.marginLeft = timeCodePos + 'px';
+
+        //    const pos = this._video.duration * newPosRatio;
+        //    this._timeCode.innerText = HTMLBvVideoPlayer._dur2str(pos);
+        //});
+        //progressTrack.addEventListener('mouseleave', () => {
+        //    this._progressCursor.style.width = "0%";
+        //    this._timeCode.setAttribute('hidden', '');
+        //});
+        //progressTrack.addEventListener('click', e => {
+        //    const x = e.target.offsetLeft + e.offsetX;
+        //    const width = e.currentTarget.clientWidth;
+        //    this._video.currentTime = this._video.duration * (x / width);
+        //});
+
+        ///**
+        // * Список сегментов буферизации.
+        // * @type {HTMLUListElement}
+        // */
+        //this._buffersSegsList = document.createElement('ul');
+
+        //const bufferSegs = document.createElement('div');
+        //bufferSegs.classList.add('segments', 'buffers');
+        //bufferSegs.appendChild(this._buffersSegsList);
+
+        //// Cursor
+
+        ///**
+        // * Полоса заполняющая прогресс бар при перемещении мыши по нем. 
+        // * @type {HTMLDivElement}
+        // */
+        //this._progressCursor = document.createElement('div');
+        //this._progressCursor.classList.add('progress-cursor');
+
+        ///**
+        // * Элемент-заполнитель прогресс бара.
+        // * @type {HTMLDivElement}
+        // */
+        //this._progressPos = document.createElement('div');
+        //this._progressPos.classList.add('progress-pos');
+
+        //#endregion --- Create Progress Bar
+
+        //#region --- Create Controls
+
+        const controlsContainer = document.createElement('div');
+        controlsContainer.classList.add('controls-container');
+        panelWrapper.appendChild(controlsContainer);
+
+        //#region ---|--- Create Left Controls Panel
+
+        const leftPanel = document.createElement('div');
+        leftPanel.classList.add('left-panel');
+        controlsContainer.appendChild(leftPanel);
+
+        /**
+         * Кнопка воспроизведения/остановка.
+         * @type {HTMLButtonElement}
+         */
+        this._playButton = document.createElement('button');
+        this._playButton.disabled = true;
+        this._playButton.addEventListener('click', e => {
+            if (this._video.paused) {
+                this._video.play();
+            } else {
+                this._video.pause();
+            }
+        });
+        leftPanel.appendChild(this._playButton);
+
+        //#region ---|---|--- Create Volume Control
+
+        const volumeContainer = document.createElement('div');
+        volumeContainer.classList.add('volume-container');
+        leftPanel.appendChild(volumeContainer);
+
+        /**
+         * Кнопка выключения/включения звука.
+         * @type {HTMLButtonElement}
+         */
+        this._volumeButton = document.createElement('button');
+        this._volumeButton.addEventListener('click', () => {
+            this._video.muted = !this._video.muted;
+
+            if (this._video.volume === 0) {
+                this._video.muted = false;
+                this._video.volume = 1;
+            }
+        });
+        volumeContainer.appendChild(this._volumeButton);
+
+        const volumeSlider = document.createElement('div');
+        volumeSlider.classList.add('volume-slider');
+        volumeSlider.title = 'Громкость';
+        volumeSlider.addEventListener('mousedown', () => {
+            this._volumePressed = true;
+        });
+        volumeSlider.addEventListener('mouseup', () => {
+            this._volumePressed = false;
+        });
+        volumeSlider.addEventListener('mouseleave', () => {
+            this._volumePressed = false;
+        });
+        volumeContainer.appendChild(volumeSlider);
+
+        const volumeSliderWrapper = document.createElement('div');
+        volumeSliderWrapper.classList.add('volume-slider-wrapper');
+        volumeSliderWrapper.addEventListener('mousemove', e => {
+            if (this._volumePressed) {
+                this._setVolume(e);
+            }
+        });
+        volumeSliderWrapper.addEventListener('mousedown', e => {
+            this._setVolume(e);
+        });
+        volumeSlider.appendChild(volumeSliderWrapper);
+
+        const volumeSliderTrack = document.createElement('div');
+        volumeSliderTrack.classList.add('volume-slider-track');
+        volumeSliderWrapper.appendChild(volumeSliderTrack);
+
+        /**
+         * Полоса заполнения, отображает уровень громкости. 
+         * @type {HTMLDivElement}
+         */
+        this._volumeSliderFill = document.createElement('div');
+        this._volumeSliderFill.classList.add('volume-slider-fill');
+        volumeSliderTrack.appendChild(this._volumeSliderFill);
+
+        /**
+         * Движок контрола уровеня громкости.
+         * @type { HTMLDivElement }
+         */
+        this._volumeSliderThumb = document.createElement('div');
+        this._volumeSliderThumb.classList.add('volume-slider-thumb');
+        this._volumeSliderFill.appendChild(this._volumeSliderThumb);
+
+        /**
+         * Индекатор времени.
+         * @type {HTMLSpanElement}
+         */
+        this._timeIndicator = document.createElement('div');
+        this._timeIndicator.classList.add('time-indicator');
+        this._timeIndicator.style.visibility = 'collapse';
+        leftPanel.appendChild(this._timeIndicator);
+
+        //#endregion ---|---|--- Create Volume Control
+
+        //#endregion ---|--- Create Left Controls Panel
+
+        //#region ---|--- Create Right Controls Panel
+
+        const rightPanel = document.createElement('div');
+        rightPanel.classList.add('right-panel');
+        controlsContainer.appendChild(rightPanel);
+
+        /**
+         * Кнопка уменьшения скорость воспроизведения.
+         * @type {HTMLButtonElement}
+         */
+        this._slowerButton = document.createElement('button');
+        this._slowerButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 28.5,26 15.5,18 28.5,10 z M 18.5,26 5.5,18 18.5,10 z"></path></g></svg>`;
+        this._slowerButton.addEventListener('click', e => {
+            if (!e.target.disabled) {
+                this._setSpeed(this._video, this._playSpeedCur - 1);
+            }
+        });
+        rightPanel.appendChild(this._slowerButton);
+
+        /**
+         * Кнопка-индикатор скорости воспроизведения.
+         * @type {HTMLButtonElement}
+         */
+        this._speedIndicatorButton = document.createElement('button');
+        this._speedIndicatorButton.classList.add('ctl-speed-indicator');
+        this._speedIndicatorButton.addEventListener('click', e => {
+            this._setSpeed(this._video, this._playSpeedDef);
+        });
+        rightPanel.appendChild(this._speedIndicatorButton);
+
+        /**
+         * Контейнер индикатора скорости воспроизведения.
+         * @type {HTMLDivElement}
+         */
+        this._speedIndicatorContent = document.createElement('div');
+        this._speedIndicatorContent.classList.add('ctl-speed-indicator-content');
+        this._speedIndicatorButton.appendChild(this._speedIndicatorContent);
+
+        /**
+         * Кнопка увелечения скорость воспроизведения. 
+         * @type {HTMLButtonElement}
+         */
+        this._fasterButton = document.createElement('button');
+        this._fasterButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 7.5,26 20.5,18 7.5,10 z M 17.5,26 30.5,18 17.5,10 z"></path></g></svg>`
+        this._fasterButton.addEventListener('click', e => {
+            if (!e.target.disabled) {
+                this._setSpeed(this._video, this._playSpeedCur + 1);
+            }
+        });
+        rightPanel.appendChild(this._fasterButton);
+
+        /**
+         * Кнопка настроек.
+         * @type {HTMLButtonElement}
+         */
+        this._settingsButton = document.createElement('button');
+        this._settingsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172"><g transform-origin="50%" transform="scale(0.65)"><path d="M69.28711,14.33333l-3.52734,18.08464c-5.8821,2.22427 -11.32102,5.33176 -16.097,9.25228l-17.37077,-5.99089l-16.71289,28.97461l13.89941,12.07975c-0.49282,3.02401 -0.81185,6.10305 -0.81185,9.26628c0,3.16323 0.31903,6.24227 0.81185,9.26628l-13.89941,12.07975l16.71289,28.9746l17.37077,-5.99088c4.77599,3.92052 10.2149,7.02801 16.097,9.25227l3.52734,18.08464h33.42578l3.52735,-18.08464c5.88211,-2.22427 11.32102,-5.33176 16.097,-9.25227l17.37077,5.99088l16.71289,-28.9746l-13.89941,-12.07975c0.49282,-3.02401 0.81185,-6.10305 0.81185,-9.26628c0,-3.16323 -0.31902,-6.24227 -0.81185,-9.26628l13.89941,-12.07975l-16.71289,-28.97461l-17.37077,5.99089c-4.77598,-3.92052 -10.21489,-7.02801 -16.097,-9.25228l-3.52735,-18.08464zM86,57.33333c15.83117,0 28.66667,12.8355 28.66667,28.66667c0,15.83117 -12.8355,28.66667 -28.66667,28.66667c-15.83117,0 -28.66667,-12.8355 -28.66667,-28.66667c0,-15.83117 12.8355,-28.66667 28.66667,-28.66667z"></path></g></svg>`;
+        this._settingsButton.title = 'Настройки';
+        this._settingsButton.addEventListener('click', () => {
+            // Показать/скрыть
+            const isShow = this._popupMenu.style.opacity !== '1';
+            this._showMenu(isShow);
+        });
+        rightPanel.appendChild(this._settingsButton);
+
+        /**
+         * Кнопка включения/выключения режима картинка-в-картинке.
+         * @type {HTMLButtonElement}
+         */
+        this._pipButton = document.createElement('button');
+        this._pipButton.addEventListener('click', () => {
+            if (document.pictureInPictureElement) {
+                document.exitPictureInPicture();
+            } else {
+                this._video.requestPictureInPicture();
+            }
+        });
+        rightPanel.appendChild(this._pipButton);
+
+        /**
+         * Кнопка включения/выключения полноэкранного режима.
+         * @type {HTMLButtonElement}
+         */
+        this._fullscrButton = document.createElement('button');
+        this._fullscrButton.addEventListener('click', () => {
+            if (document.fullscreen) {
+                document.exitFullscreen();
+            } else {
+                this.requestFullscreen();
+            }
+        });
+        rightPanel.appendChild(this._fullscrButton);
+
+        //#endregion ---|--- Create Right Controls Panel
+
+        //#endregion --- Create Controls
+
+        //#endregion Create Bottom Panel
+
+        //#region Create Bottom Gradient
 
         /**
          * @type {HTMLDivElement}
          */
         this._gradientBotton = document.createElement('div');
         this._gradientBotton.classList.add('gradient-bottom', 'fade');
+        root.appendChild(this._gradientBotton);
+
+        //#endregion Create Bottom Gradient
+
+        //#region Create Video
 
         /**
          * Элемент Video.
          * @type {HTMLVideoElement} 
          */
         this._video = document.createElement('video');
-        this._video.innerHTML = `Тег video не поддерживается вашим браузером. Обновите браузер.`;
+        this._video.textContent = `Тег video не поддерживается вашим браузером. Обновите браузер.`;
         this._video.addEventListener('timeupdate', e => {
             /**
              * @type {HTMLVideoElement} 
@@ -427,27 +1213,26 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
             this._updatePipButtonState(false);
         });
         this._video.addEventListener('click', () => {
-            if (this._settingMenu.style.opacity !== '1') {
+            if (this._popupMenu.style.opacity !== '1') {
                 this._playButton.click();
             }
         });
-        // 1. loadstart
-        this._video.addEventListener('loadstart', e => {
+        this._video.addEventListener('loadstart', e => { // 1. loadstart
+            //this._logger.log('load start');
             this._spinnerShow();
         });
-        // 2. durationchange
-        this._video.addEventListener('durationchange', () => {
+        this._video.addEventListener('durationchange', () => { // 2. durationchange
+            //this._logger.log('duration change');
             this._updateTime();
         });
-        // 3. loadedmetadata 
-        this._video.addEventListener('loadedmetadata', e => {
+        this._video.addEventListener('loadedmetadata', e => { // 3. loadedmetadata 
+            //this._logger.log('loaded meta data');
         });
-        // 4. loadeddata 
-        this._video.addEventListener('loadeddata', e => {
+        this._video.addEventListener('loadeddata', e => { // 4. loadeddata 
+            //this._logger.log('loaded data');
             this._playButton.disabled = false;
         });
-        // 5. progress
-        this._video.addEventListener('progress', e => {
+        this._video.addEventListener('progress', e => { // 5. progress
             /**
              * @type {HTMLVideoElement}
              */
@@ -473,27 +1258,105 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
             } else if (sender.readyState === sender.HAVE_FUTURE_DATA) {
                 this._spinnerHide();
             }
+
+            //let networkState;
+            //switch (sender.networkState) {
+            //    case 0:
+            //        networkState = 'NETWORK_EMPTY';
+            //        break;
+            //    case 1:
+            //        networkState = 'NETWORK_IDLE';
+            //        break;
+            //    case 2:
+            //        networkState = 'NETWORK_LOADING';
+            //        break;
+            //    case 3:
+            //        networkState = 'NETWORK_NO_SOURCE';
+            //        break;
+            //}
+
+            //let readyState;
+            //switch (sender.readyState) {
+            //    case 0:
+            //        readyState = 'HAVE_NOTHING';
+            //        break;
+            //    case 1:
+            //        readyState = 'HAVE_METADATA';
+            //        break;
+            //    case 2:
+            //        readyState = 'HAVE_CURRENT_DATA';
+            //        break;
+            //    case 3:
+            //        readyState = 'HAVE_FUTURE_DATA';
+            //        break;
+            //    case 4:
+            //        readyState = 'HAVE_ENOUGH_DATA';
+            //        break;
+            //}
+
+            //this._logger.log('progress: network ${networkState} / ready ${readyState}`);
         });
-        // 6. canplay
-        this._video.addEventListener('canplay', e => {
+        this._video.addEventListener('canplay', e => { // 6. canplay
+            //this._logger.log('can play');
             this._spinnerHide();
         });
-        // 7. canplaythrough 
-        this._video.addEventListener('canplaythrough', e => {
+        this._video.addEventListener('canplaythrough', e => { // 7. canplaythrough 
+            //this._logger.log('can play through');
         });
+        this._video.addEventListener('error', e => {
+            /**
+             * @type {HTMLVideoElement}
+             */
+            const sender = e.currentTarget;
 
-        // Добавляем в DOM
-        wrapper.appendChild(this._settingMenu);
-        wrapper.appendChild(this._panelBotton);
-        wrapper.appendChild(this._gradientBotton);
-        wrapper.appendChild(this._video);
+            this._spinnerHide();
 
-        // Load Spinner
+            const block = document.createElement('div');
+            block.textContent = 'Источник видео не найден';
+            block.style.position = 'absolute';
+            block.style.left = '50%';
+            block.style.top = '50%';
+            block.style.transform = 'translateX(-50%) translateY(-50%)';
+            block.style.border = '2px solid red';
+            block.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+            block.style.color = 'white';
+            block.style.fontSize = '2rem';
+            block.style.padding = '20px';
+            root.appendChild(block);
+
+            let err;
+            switch (sender.error.code) {
+                case 1:
+                    err = 'MEDIA_ERR_ABORTED';
+                    break;
+                case 2:
+                    err = 'MEDIA_ERR_NETWORK';
+                    break;
+                case 3:
+                    err = 'MEDIA_ERR_DECODE';
+                    break;
+                case 4:
+                    err = 'MEDIA_ERR_SRC_NOT_SUPPORTED';
+                    break;
+            }
+
+            this._logger.error(`${sender.error.code} ${err} - ${sender.error.message}`);
+        });
+        root.appendChild(this._video);
+
+        //#endregion Create Video
+
+        //#region Create Load Spinner
+
         const svgNS = 'http://www.w3.org/2000/svg';
+
+        /**
+         * Спинер загрузки.
+         * @type {SVGSVGElement}
+         */
         this._spinnerWrapper = document.createElementNS(svgNS, 'svg');
         this._spinnerWrapper.setAttribute('viewBox', '0 0 50 50');
         this._spinnerWrapper.classList.add('spinner');
-        this._spinnerHide();
 
         const circle = document.createElementNS(svgNS, 'circle');
         circle.setAttribute('cx', 25);
@@ -502,486 +1365,26 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
         circle.setAttribute('fill', 'none');
         circle.setAttribute('stroke-width', 5);
         this._spinnerWrapper.appendChild(circle);
-        wrapper.appendChild(this._spinnerWrapper);
 
-        shadow.appendChild(style);
-        shadow.appendChild(wrapper);
+        root.appendChild(this._spinnerWrapper);
+
+        this._spinnerHide();
+
+        //#endregion Create Load Spinner
+
+        // Add to DOM
+        shadow.appendChild(root);
 
         this._isInitialized = true;
     }
 
     /**
-     * Показывает спиннер загрузки.
-     */
-    _spinnerShow() { this._spinnerWrapper.style.visibility = 'visible'; }
-
-    /**
-     * Crhsdftn спиннер загрузки. 
-     */
-    _spinnerHide() { this._spinnerWrapper.style.visibility = 'collapse'; }
-
-    /**
-     * Обновление состояния элементов управления. 
-     */
-    _updateControls() {
-        this._updatePlayButtonState();
-        this._updateVolumeButtonState();
-        this._updateSpeedControls();
-        this._updatePipButtonState();
-        this._updateFullScreenButtonState();
-    }
-
-    /**
-     * Обновляет индикатор времени. 
-     */
-    _updateTime() {
-        const cur = this._video.currentTime;
-        const dur = this._video.duration;
-
-        if (isNaN(cur) || isNaN(dur)) {
-            this._timeIndicator.style.visibility = 'collapse';
-        } else {
-            this._timeIndicator.style.visibility = 'visible';
-            const curStr = HTMLBvVideoPlayer._dur2str(cur);
-            const durStr = HTMLBvVideoPlayer._dur2str(dur);
-            this._timeIndicator.textContent = `${curStr} / ${durStr}`;
-        }
-    }
-
-    /**
-     * Элемент стилей.
-     * @returns {HTMLStyleElement} 
-     */
-    _createStyle() {
-        const style = document.createElement('style');
-        style.textContent = `
-
-/* VIDEO PLAYER */
-
-.wrapper {
-    --button-size: 40px;
-    --volume-width: 70px;
-    --volume-thumb: 12px;
-    --controls-color: rgba(255, 255, 255, 0.9);
-    --progress-color: rgba(255, 255, 255, 0.2);
-    --progress-buffered-color: rgba(255, 255, 255, 0.3);
-    --progress-cursor-color: rgba(255, 255, 255, 0.4);
-    --progress-time-color: red;
-
-    height: 100%;
-    width: 100%;
-    background-color: black;
-    position: relative;
-    user-select: none;
-    min-width: 500px;
-    min-height: 100px;
-    font-family: Arial;
-}
-
-    .wrapper video {
-        height: 100%;
-        width: 100%;
-    }
-
-.panel-top,
-.panel-bottom {
-    position: absolute;
-    width: 100%;
-    z-index: 30000;
-}
-
-.panel-top {
-    top: 0;
-}
-
-.panel-bottom {
-    bottom: 0;
-}
-
-.fade {
-    transition: visibility 0.15s, opacity 0.15s linear;
-}
-
-.hided {
-    visibility: collapse;
-    opacity: 0;
-}
-
-.panel-wrapper {
-    margin: 0 10px;
-}
-
-/* GRADIENT */
-
-.gradient-top,
-.gradient-bottom {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 150px;
-}
-
-.gradient-top {
-    top: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 70%);
-}
-
-.gradient-bottom {
-    bottom: 0;
-    background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 90%);
-}
-
-/* PROGRESS BAR  */
-
-.progress-container {
-    height: 8px;
-    /* высота прогрес-бара при наведенной мыши (активная) */
-    margin-bottom: 4px;
-    /* вертикальный отступ между прогрес-баром и панелью контроллов */
-}
-
-.progress-track {
-    position: relative;
-    background-color: var(--progress-color);
-    height: 50%;
-    transform: translateY(+50%);
-}
-
-    .progress-track:hover {
-        height: 100%;
-        transform: translateY(0);
-        cursor: pointer;
-    }
-
-.progress-pos,
-.progress-cursor {
-    position: absolute;
-    height: 100%;
-    width: 0%;
-}
-
-.progress-pos {
-    background-color: var(--progress-time-color);
-    /*transition: width 0.3s linear;*/
-}
-
-.progress-cursor {
-    background-color: var(--progress-cursor-color);
-}
-
-/* SEGMENTS */
-
-.segments {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-}
-
-    .segments ul {
-        list-style-type: none;
-    }
-
-        .segments ul li {
-            position: absolute;
-            top: 0;
-            height: 100%;
-            user-select: none;
-        }
-
-/* BUFFER SEGMENTS */
-
-.buffers ul li {
-    background-color: var(--progress-buffered-color);
-}
-
-/* CONTROLS */
-
-.ctl {
-    font-size: 0;
-    display: inline-block;
-    height: 100%;
-}
-
-.ctl-left {
-    float: left;
-}
-
-.ctl-right {
-    float: right;
-}
-
-/* BUTTON */
-
-.controls-container button {
-    height: var(--button-size);
-    width: var(--button-size);
-    background-color: transparent;
-    border: 0px solid transparent;
-    cursor: pointer;
-    padding: 0;
-    outline: none;
-    vertical-align: middle;
-}
-
-    .controls-container button path {
-        fill: var(--controls-color);
-    }
-
-    .controls-container button:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .controls-container button:active {
-        background-color: rgba(255, 255, 255, 0.2);
-        border-color: white;
-    }
-
-    .controls-container button:focus {
-        /* border-color: red; */
-    }
-
-    .controls-container button:active:focus {
-        border-color: transparent;
-    }
-
-    .controls-container button:disabled path {
-        fill: rgba(255, 255, 255, 0.3);
-    }
-
-    .controls-container button:disabled:hover {
-        background-color: transparent;
-    }
-
-    .controls-container button:disabled:active {
-        border-color: transparent;
-    }
-
-/* VOLUME CONTROLS */
-
-.volume-container {
-    display: inline-block;
-    width: var(--button-size);
-    height: var(--button-size);
-    transition: width 0.4s;
-    white-space: nowrap;
-    overflow: hidden;
-    vertical-align: middle;
-}
-
-    .volume-container:hover {
-        width: calc(var(--button-size) + var(--volume-width));
-        transition: width 0.4s;
-    }
-
-.volume-slider {
-    display: inline-block;
-    width: var(--volume-width);
-    vertical-align: middle;
-    cursor: pointer;
-    position: relative;
-    height: 100%;
-}
-
-.volume-slider-wrapper {
-    position: relative;
-    height: 100%;
-    margin: 0 calc(var(--volume-thumb));
-}
-
-.volume-slider-track {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    left: 0;
-    height: 3px;
-    width: 100%;
-    background-color: rgba(0, 0, 0, 0.3);
-}
-
-.volume-slider-fill {
-    background-color: var(--controls-color);
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 100%;
-}
-
-.volume-slider-thumb {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%) translateX(50%);
-    right: 0;
-    background-color: var(--controls-color);
-    height: var(--volume-thumb);
-    width: var(--volume-thumb);
-    border-radius: calc(var(--volume-thumb) / 2);
-    cursor: pointer;
-}
-
-/* SPEED INDICATORS */
-
-.ctl-speed-indicator {
-    width: 60px !important;
-}
-
-.ctl-speed-indicator-content {
-    font-size: 18px;
-    font-weight: bolder;
-    border-radius: 4px;
-    padding: 3px 0;
-    color: var(--controls-color);
-}
-
-/* TIME INDICATORS */
-
-.time-indicator {
-    margin-left: 10px;
-    font-size: 1.1rem;
-    font-weight: 400;
-    display: inline-block;
-    vertical-align: middle;
-    color: var(--controls-color);
-}
-
-/* POPUP MENU */
-
-.menu {
-    position: absolute;
-    right: 10px;
-    bottom: 60px;
-    width: 250px;
-    background-color: rgba(28,28,28,0.9);
-    color: rgb(238, 238, 238);
-    border-radius: 2px;
-    z-index: 3001;
-    visibility: collapse;
-    opacity: 0;
-    transition: .3s opacity, .3s visibility;
-    text-shadow: 0 0 2px rgb(0, 0, 0, 0.5);
-}
-
-    .menu ul {
-        padding: 0;
-        margin: 0;
-        list-style: none;
-    }
-
-    .menu li {
-        display: block;
-        cursor: pointer;
-        font-size: 1rem;
-        padding: 10px 5px;
-    }
-
-        .menu li:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-.menu-item-icon {
-    float: left;
-    padding: 0 10px;
-}
-
-    .menu-item-icon svg {
-        fill: rgb(238, 238, 238);
-        width: 16px;
-    }
-
-.menu-item-body {
-    height: 100%;
-}
-
-.hide {
-    visibility: hidden;
-}
-
-/* CURSOR TIME CODE */
-
-.timecode-container {
-    margin-bottom: 8px;
-}
-
-.timecode {
-    margin-left: 0; /* в px */
-    width: 55px;
-    background-color: rgba(0, 0, 0, 0.3);
-    font-size: 1rem;
-    text-align: center;
-    padding: 2px 5px;
-    position: relative;
-    color: var(--controls-color);
-    border-radius: 2px;
-}
-
-/* LOADER */
-
-.spinner {
-  animation: rotate 2s linear infinite;
-  z-index: 2;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: -25px 0 0 -25px;
-  width: 50px;
-  height: 50px;
-}
-
-.spinner > circle {
-    stroke: rgba(255, 255, 255, 0.8);
-    stroke-linecap: round;
-    animation: dash 1.5s ease-in-out infinite;
-  }
-
-@keyframes rotate {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes dash {
-  0% {
-    stroke-dasharray: 1, 150;
-    stroke-dashoffset: 0;
-  }
-  50% {
-    stroke-dasharray: 90, 150;
-    stroke-dashoffset: -35;
-  }
-  100% {
-    stroke-dasharray: 90, 150;
-    stroke-dashoffset: -124;
-  }
-}
-`;
-        return style;
-    }
-
-    /**
-     * Создает всплывающее меню настроек.
-     * @returns {HTMLDivElement}
-     */
-    _createSettingsMenu() {
-        /**
-         * Список пунктов меню.
-         * @type {HTMLUListElement} 
-         */
-        this._menuItemList = document.createElement('ul');
-
-        const menu = document.createElement('div');
-        menu.classList.add('menu');
-        menu.appendChild(this._menuItemList);
-
-        return menu;
-    }
-
-    /**
      * Создает пункт меню.
-     * @param {string} text
      * @param {string} value
+     * @param {string} html
      * @returns {HTMLLIElement}
      */
-    _createMenuItem(html, value) {
+    createMenuItem(value, html) {
         const iconDiv = document.createElement('div');
         iconDiv.classList.add('menu-item-icon');
         iconDiv.style.visibility = 'hidden';
@@ -1029,617 +1432,373 @@ window.customElements.define('bv-video-player', class HTMLBvVideoPlayer extends 
         return li;
     }
 
-    /**
-     * Обновить состояние пунктов меню. 
-     */
-    _updateMenu() {
-        /**
-         * @type {Array<HTMLDivElement>} 
-         */
-        const items = Array.from(this._menuItemList.children);
-        items.forEach((element, _i, _ar) => {
-            const isSelected = this._curParValue === element.getAttribute('data-value');
-            element.querySelector('.menu-item-icon').style.visibility = isSelected ? 'visible' : 'hidden';
-        });
-    }
+    //#endregion Create Functions
 
-    /**
-     * Скрыть/показать меню.
-     * @param {boolean}
-     */
-    _showMenu(isShow = true) {
-        this._settingMenu.style.visibility = isShow ? 'visible' : 'collapse';
-        this._settingMenu.style.opacity = isShow ? '1' : '0';
-    }
+};
+window.customElements.define('bv-video-player', HTMLBvVideoPlayer);
 
-    /**
-     * Создает нижнюю панель управления.
-     * @returns {HTMLDivElement}
-     */
-    _createBottomPanel() {
-        const bottomPanel = document.createElement('div');
-        bottomPanel.classList.add('panel-bottom', 'fade');
 
-        const bottomPanelWrapper = document.createElement('div');
-        bottomPanelWrapper.classList.add('panel-wrapper');
 
-        const timeCodeContainer = this._createTimeCodeContainer();
-        const progressBarContainer = this._createProgressContainer();
-        const controlsContainer = this._createControlsContainer();
-
-        bottomPanelWrapper.appendChild(timeCodeContainer);
-        bottomPanelWrapper.appendChild(progressBarContainer);
-        bottomPanelWrapper.appendChild(controlsContainer);
-
-        bottomPanel.appendChild(bottomPanelWrapper);
-        return bottomPanel;
-    }
-
-    /**
-     * Создает элемент плавающий за курсором с тайм кодом на прогрес баре.
-     * @returns {HTMLDivElement}
-     */
-    _createTimeCodeContainer() {
-        const timeCodeContainer = document.createElement('div');
-        timeCodeContainer.classList.add('timecode-container');
-
-        /**
-         * Тайм код при движении мыши по прогресс бару.
-         * @type {HTMLDivElement} 
-         */
-        this._timeCode = document.createElement('div');
-        this._timeCode.classList.add('timecode');
-        this._timeCode.hidden = true;
-
-        timeCodeContainer.appendChild(this._timeCode);
-        return timeCodeContainer;
-    }
-
-    /**
-     * Создает прогрес бар.
-     * @returns {HTMLDivElement}
-     */
-    _createProgressContainer() {
-        const progressContainer = document.createElement('div');
-        progressContainer.classList.add('progress-container');
-
-        const progressTrack = document.createElement('div');
-        progressTrack.classList.add('progress-track');
-        progressTrack.addEventListener('mousemove', e => {
-            const x = e.target.offsetLeft + e.offsetX;
-            const width = e.currentTarget.clientWidth;
-            const newPosRatio = x / width;
-
-            this._progressCursor.style.width = newPosRatio * 100 + "%";
-            this._timeCode.removeAttribute('hidden');
-
-            const timeCodeWidth = this._timeCode.clientWidth;
-            let timeCodePos = x - timeCodeWidth / 2;
-            if (x < timeCodeWidth / 2) {
-                timeCodePos = 0;
-            } else if (x > width - timeCodeWidth / 2) {
-                timeCodePos = width - timeCodeWidth;
-            }
-
-            this._timeCode.style.marginLeft = timeCodePos + 'px';
-
-            const pos = this._video.duration * newPosRatio;
-            this._timeCode.innerText = HTMLBvVideoPlayer._dur2str(pos);
-        });
-        progressTrack.addEventListener('mouseleave', () => {
-            this._progressCursor.style.width = "0%";
-            this._timeCode.setAttribute('hidden', '');
-        });
-        progressTrack.addEventListener('click', e => {
-            const x = e.target.offsetLeft + e.offsetX;
-            const width = e.currentTarget.clientWidth;
-            this._video.currentTime = this._video.duration * (x / width);
-        });
-
-        /**
-         * Список сегментов буферизации.
-         * @type {HTMLUListElement}
-         */
-        this._buffersSegsList = document.createElement('ul');
-
-        const bufferSegs = document.createElement('div');
-        bufferSegs.classList.add('segments', 'buffers');
-        bufferSegs.appendChild(this._buffersSegsList);
-
-        // Cursor
-
-        /**
-         * Полоса заполняющая прогресс бар при перемещении мыши по нем. 
-         * @type {HTMLDivElement}
-         */
-        this._progressCursor = document.createElement('div');
-        this._progressCursor.classList.add('progress-cursor');
-
-        /**
-         * Элемент-заполнитель прогресс бара.
-         * @type {HTMLDivElement}
-         */
-        this._progressPos = document.createElement('div');
-        this._progressPos.classList.add('progress-pos');
-
-        progressTrack.appendChild(bufferSegs);
-        progressTrack.appendChild(this._progressCursor);
-        progressTrack.appendChild(this._progressPos);
-
-        progressContainer.appendChild(progressTrack);
-        return progressContainer;
-    }
-
-    /**
-     * Создает контролы упавления.
-     * @returns {HTMLDivElement}
-     */
-    _createControlsContainer() {
-        const controlsContainer = document.createElement('div');
-        controlsContainer.classList.add('controls-container');
-
-        const leftPanel = this._createControlsLeftSide();
-        const rightPanel = this._createControlsRightSide();
-
-        controlsContainer.appendChild(leftPanel);
-        controlsContainer.appendChild(rightPanel);
-
-        return controlsContainer;
-    }
-
-    /**
-     * Создает контролы управления левой стороны.
-     * @returns {HTMLDivElement}
-     */
-    _createControlsLeftSide() {
-        const panel = document.createElement('div');
-        panel.classList.add('ctl', 'ctl-left');
-
-        /**
-         * Кнопка воспроизведения/остановка.
-         * @type {HTMLButtonElement}
-         */
-        this._playButton = document.createElement('button');
-        this._playButton.disabled = true;
-        this._playButton.addEventListener('click', e => {
-            if (this._video.paused) {
-                this._video.play();
-            } else {
-                this._video.pause();
-            }
-        });
-
-        // volume 
-        const volume = this._createVolumeControl();
-
-        /**
-         * Индекатор времени.
-         * @type {HTMLSpanElement}
-         */
-        this._timeIndicator = document.createElement('div');
-        this._timeIndicator.classList.add('time-indicator');
-        this._timeIndicator.style.visibility = 'collapse';
-
-        panel.appendChild(this._playButton);
-        panel.appendChild(volume);
-        panel.appendChild(this._timeIndicator);
-
-        return panel;
-    }
-
-    /**
-     * Создает контрол управления громкостью.
-     * @returns {HTMLDivElement}
-     */
-    _createVolumeControl() {
-        const container = document.createElement('div');
-        container.classList.add('volume-container');
-
-        /**
-         * Кнопка выключения/включения звука.
-         * @type {HTMLButtonElement}
-         */
-        this._volumeButton = document.createElement('button');
-        this._volumeButton.addEventListener('click', () => {
-            this._video.muted = !this._video.muted;
-
-            if (this._video.volume === 0) {
-                this._video.muted = false;
-                this._video.volume = 1;
-            }
-        });
-
-        /**
-         * Движок контрола уровеня громкости.
-         * @type {HTMLDivElement}
-         */
-        this._volumeSliderThumb = document.createElement('div');
-        this._volumeSliderThumb.classList.add('volume-slider-thumb');
-
-        /**
-         * Полоса заполнения, отображает уровень громкости. 
-         * @type {HTMLDivElement}
-         */
-        this._volumeSliderFill = document.createElement('div');
-        this._volumeSliderFill.classList.add('volume-slider-fill');
-        this._volumeSliderFill.appendChild(this._volumeSliderThumb);
-
-        const volumeSliderTrack = document.createElement('div');
-        volumeSliderTrack.classList.add('volume-slider-track');
-        volumeSliderTrack.appendChild(this._volumeSliderFill);
-
-        const volumeSliderWrapper = document.createElement('div');
-        volumeSliderWrapper.classList.add('volume-slider-wrapper');
-        volumeSliderWrapper.addEventListener('mousemove', e => {
-            if (this._volumePressed) {
-                this._setVolume(e);
-            }
-        });
-        volumeSliderWrapper.addEventListener('mousedown', e => {
-            this._setVolume(e);
-        });
-        volumeSliderWrapper.appendChild(volumeSliderTrack);
-
-        const volumeSlider = document.createElement('div');
-        volumeSlider.classList.add('volume-slider');
-        volumeSlider.title = 'Громкость';
-        volumeSlider.addEventListener('mousedown', () => {
-            this._volumePressed = true;
-        });
-        volumeSlider.addEventListener('mouseup', () => {
-            this._volumePressed = false;
-        });
-        volumeSlider.addEventListener('mouseleave', () => {
-            this._volumePressed = false;
-        });
-        volumeSlider.appendChild(volumeSliderWrapper);
-
-        container.appendChild(this._volumeButton);
-        container.appendChild(volumeSlider);
-        return container;
-    }
-
-    /**
-     * Создает контролы упавления правой стороны.
-     * @returns {HTMLDivElement}
-     */
-    _createControlsRightSide() {
-        const panel = document.createElement('div');
-        panel.classList.add('ctl', 'ctl-right');
-
-        /**
-         * Кнопка уменьшения скорость воспроизведения.
-         * @type {HTMLButtonElement}
-         */
-        this._slowerButton = document.createElement('button');
-        this._slowerButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 28.5,26 15.5,18 28.5,10 z M 18.5,26 5.5,18 18.5,10 z"></path></g></svg>`;
-        this._slowerButton.addEventListener('click', e => {
-            if (!e.target.disabled) {
-                this._setSpeed(this._video, this._playSpeedCur - 1);
-            }
-        });
-
-        /**
-         * Контейнер индикатора скорости воспроизведения.
-         * @type {HTMLDivElement}
-         */
-        this._speedIndicatorContent = document.createElement('div');
-        this._speedIndicatorContent.classList.add('ctl-speed-indicator-content');
-
-        /**
-         * Кнопка-индикатор скорости воспроизведения.
-         * @type {HTMLButtonElement}
-         */
-        this._speedIndicatorButton = document.createElement('button');
-        this._speedIndicatorButton.classList.add('ctl-speed-indicator');
-        this._speedIndicatorButton.addEventListener('click', e => {
-            this._setSpeed(this._video, this._playSpeedDef);
-        });
-        this._speedIndicatorButton.appendChild(this._speedIndicatorContent);
-
-        /**
-         * Кнопка увелечения скорость воспроизведения. 
-         * @type {HTMLButtonElement}
-         */
-        this._fasterButton = document.createElement('button');
-        this._fasterButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 7.5,26 20.5,18 7.5,10 z M 17.5,26 30.5,18 17.5,10 z"></path></g></svg>`
-        this._fasterButton.addEventListener('click', e => {
-            if (!e.target.disabled) {
-                this._setSpeed(this._video, this._playSpeedCur + 1);
-            }
-        });
-
-        /**
-         * Кнопка настроек.
-         * @type {HTMLButtonElement}
-         */
-        this._settingsButton = document.createElement('button');
-        this._settingsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172"><g transform-origin="50%" transform="scale(0.65)"><path d="M69.28711,14.33333l-3.52734,18.08464c-5.8821,2.22427 -11.32102,5.33176 -16.097,9.25228l-17.37077,-5.99089l-16.71289,28.97461l13.89941,12.07975c-0.49282,3.02401 -0.81185,6.10305 -0.81185,9.26628c0,3.16323 0.31903,6.24227 0.81185,9.26628l-13.89941,12.07975l16.71289,28.9746l17.37077,-5.99088c4.77599,3.92052 10.2149,7.02801 16.097,9.25227l3.52734,18.08464h33.42578l3.52735,-18.08464c5.88211,-2.22427 11.32102,-5.33176 16.097,-9.25227l17.37077,5.99088l16.71289,-28.9746l-13.89941,-12.07975c0.49282,-3.02401 0.81185,-6.10305 0.81185,-9.26628c0,-3.16323 -0.31902,-6.24227 -0.81185,-9.26628l13.89941,-12.07975l-16.71289,-28.97461l-17.37077,5.99089c-4.77598,-3.92052 -10.21489,-7.02801 -16.097,-9.25228l-3.52735,-18.08464zM86,57.33333c15.83117,0 28.66667,12.8355 28.66667,28.66667c0,15.83117 -12.8355,28.66667 -28.66667,28.66667c-15.83117,0 -28.66667,-12.8355 -28.66667,-28.66667c0,-15.83117 12.8355,-28.66667 28.66667,-28.66667z"></path></g></svg>`;
-        this._settingsButton.title = 'Настройки';
-        this._settingsButton.addEventListener('click', () => {
-            // Показать/скрыть
-            const isShow = this._settingMenu.style.opacity !== '1';
-            this._showMenu(isShow);
-        });
-
-        /**
-         * Кнопка включения/выключения режима картинка-в-картинке.
-         * @type {HTMLButtonElement}
-         */
-        this._pipButton = document.createElement('button');
-        this._pipButton.addEventListener('click', () => {
-            if (document.pictureInPictureElement) {
-                document.exitPictureInPicture();
-            } else {
-                this._video.requestPictureInPicture();
-            }
-        });
-
-        /**
-         * Кнопка включения/выключения полноэкранного режима.
-         * @type {HTMLButtonElement}
-         */
-        this._fullscrButton = document.createElement('button');
-        this._fullscrButton.addEventListener('click', () => {
-            if (document.fullscreen) {
-                document.exitFullscreen();
-            } else {
-                this.requestFullscreen();
-            }
-        });
-
-        panel.appendChild(this._slowerButton);
-        panel.appendChild(this._speedIndicatorButton);
-        panel.appendChild(this._fasterButton);
-        panel.appendChild(this._settingsButton);
-        panel.appendChild(this._pipButton);
-        panel.appendChild(this._fullscrButton);
-
-        return panel;
-    }
-
-    /**
-     * Горячая клавиша.
-     * @type {HTMLElement} element
-     */
-    _hotkeyPrint(element) {
-        if (!this._hotkey) {
-            return '';
-        }
-
-        let key;
-
-        switch (element) {
-
-            case this._fasterButton:
-                key = 'L';
-                break;
-
-            case this._playButton:
-                key = 'K';
-                break;
-
-            case this._slowerButton:
-                key = 'J';
-                break;
-
-            case this._volumeButton:
-                key = 'M';
-                break;
-
-            case this._pipButton:
-                key = 'I';
-                break;
-
-            case this._fullscrButton:
-                key = 'F';
-                break;
-        }
-
-        return ` (${key})`;
-    }
-
-    /**
-     * Устанавливает состояние кнопки воспроизведение/стоп.
-     */
-    _updatePlayButtonState() {
-        if (this._video.paused) {
-            HTMLBvVideoPlayer._changeButtonState(this._playButton,
-                'Смотреть' + this._hotkeyPrint(this._playButton),
-                `<svg viewBox='0 0 36 36'><path d='M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z'/></svg>`
-            );
-        } else {
-            HTMLBvVideoPlayer._changeButtonState(this._playButton,
-                'Пауза' + this._hotkeyPrint(this._playButton),
-                `<svg viewBox='0 0 36 36'><path d='M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z'/></svg>`
-            );
-        }
-    }
-
-    /**
-     * Устанавливает состояние кнопки громкости.
-     */
-    _updateVolumeButtonState() {
-        if (this._video.muted || this._video.volume === 0) {
-            HTMLBvVideoPlayer._changeButtonState(this._volumeButton,
-                'Включение звука' + this._hotkeyPrint(this._volumeButton),
-                `<svg viewBox='0 0 36 36'><path d='m 21.48,17.98 c 0,-1.77 -1.02,-3.29 -2.5,-4.03 v 2.21 l 2.45,2.45 c .03,-0.2 .05,-0.41 .05,-0.63 z m 2.5,0 c 0,.94 -0.2,1.82 -0.54,2.64 l 1.51,1.51 c .66,-1.24 1.03,-2.65 1.03,-4.15 0,-4.28 -2.99,-7.86 -7,-8.76 v 2.05 c 2.89,.86 5,3.54 5,6.71 z M 9.25,8.98 l -1.27,1.26 4.72,4.73 H 7.98 v 6 H 11.98 l 5,5 v -6.73 l 4.25,4.25 c -0.67,.52 -1.42,.93 -2.25,1.18 v 2.06 c 1.38,-0.31 2.63,-0.95 3.69,-1.81 l 2.04,2.05 1.27,-1.27 -9,-9 -7.72,-7.72 z m 7.72,.99 -2.09,2.08 2.09,2.09 V 9.98 z'/></svg>`
-            );
-        } else if (this._video.volume < 0.5) {
-            HTMLBvVideoPlayer._changeButtonState(this._volumeButton,
-                'Отключение звука' + this._hotkeyPrint(this._volumeButton),
-                `<svg viewBox='0 0 36 36'><path d='M8,21 L12,21 L17,26 L17,10 L12,15 L8,15 L8,21 Z M19,14 L19,22 C20.48,21.32 21.5,19.77 21.5,18 C21.5,16.26 20.48,14.74 19,14 Z'></path></svg >`
-            );
-        } else {
-            HTMLBvVideoPlayer._changeButtonState(this._volumeButton,
-                'Отключение звука' + this._hotkeyPrint(this._volumeButton),
-                `<svg viewBox='0 0 36 36'><path d='M8,21 L12,21 L17,26 L17,10 L12,15 L8,15 L8,21 Z M19,14 L19,22 C20.48,21.32 21.5,19.77 21.5,18 C21.5,16.26 20.48,14.74 19,14 ZM19,11.29 C21.89,12.15 24,14.83 24,18 C24,21.17 21.89,23.85 19,24.71 L19,26.77 C23.01,25.86 26,22.28 26,18 C26,13.72 23.01,10.14 19,9.23 L19,11.29 Z'/></svg>`
-            );
-        }
-
-        this._volumeSliderFill.style.width = this._video.volume * 100 + '%';
-    }
-
-    /**
-     * Устанавливает состояние кнопки картинтка-в-картинке.
-     * @param {boolean} isActive
-     */
-    _updatePipButtonState(isActive = false) {
-        if (isActive) {
-            HTMLBvVideoPlayer._changeButtonState(this._pipButton,
-                'Закрыть мини проигрыватель' + this._hotkeyPrint(this._pipButton),
-                `<svg viewBox='0 0 36 36'><path d='M11,13 V23 H25 V13 z M29,25 L29,10.98 C29,9.88 28.1,9 27,9 L9,9 C7.9,9 7,9.88 7,10.98 L7,25 C7,26.1 7.9,27 9,27 L27,27 C28.1,27 29,26.1 29,25 L29,25 z M27,25.02 L9,25.02 L9,10.97 L27,10.97 L27,25.02 L27,25.02 z'/></svg>`
-            );
-        } else {
-            HTMLBvVideoPlayer._changeButtonState(this._pipButton,
-                'Открыть мини проигрыватель' + this._hotkeyPrint(this._pipButton),
-                `<svg viewBox='0 0 36 36'><path d='M25,17 L17,17 L17,23 L25,23 L25,17 L25,17 z M29,25 L29,10.98 C29,9.88 28.1,9 27,9 L9,9 C7.9,9 7,9.88 7,10.98 L7,25 C7,26.1 7.9,27 9,27 L27,27 C28.1,27 29,26.1 29,25 L29,25 z M27,25.02 L9,25.02 L9,10.97 L27,10.97 L27,25.02 L27,25.02 z'/></svg>`
-            );
-        }
-    }
-
-    /**
-     * Устанавливает состояние кнопок управления скоростью воспроизведения.
-     */
-    _updateSpeedControls() {
-        // Slower
-        this._slowerButton.hidden = !this._speedControls;
-        this._slowerButton.disabled = this._playSpeedCur <= 0;
-        this._slowerButton.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButton);
-        // Faster
-        this._fasterButton.hidden = !this._speedControls;
-        this._fasterButton.disabled = this._playSpeedCur >= this._playSpeeds.length - 1;
-        this._fasterButton.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButton);
-        // Speed Indicator
-        this._speedIndicatorContent.hidden = !this._speedControls;
-        this._speedIndicatorButton.disabled = this._playSpeedCur == this._playSpeedDef;
-        this._speedIndicatorContent.title = this._playSpeedCur == this._playSpeedDef
-            ? 'Текущая скорость воспроизведения'
-            : 'К нормальной скорости воспроизведения' + this._hotkeyPrint(this._playButton);
-        this._speedIndicatorContent.innerText = "x" + this._video.playbackRate;
-    }
-
-    /**
-     * Устанавливает состояние кнопки полноэкранного режима.
-     */
-    _updateFullScreenButtonState() {
-        if (document.fullscreen) {
-            HTMLBvVideoPlayer._changeButtonState(this._fullscrButton,
-                'Выход из полноэкранного режима' + this._hotkeyPrint(this._fullscrButton),
-                `<svg viewBox='0 0 36 36'><path d='m 14,14 -4,0 0,2 6,0 0,-6 -2,0 0,4 0,0 z'/><path d='m 22,14 0,-4 -2,0 0,6 6,0 0,-2 -4,0 0,0 z'/><path d='m 20,26 2,0 0,-4 4,0 0,-2 -6,0 0,6 0,0 z'/><path d='m 10,22 4,0 0,4 2,0 0,-6 -6,0 0,2 0,0 z'/></svg>`
-            );
-        } else {
-            HTMLBvVideoPlayer._changeButtonState(this._fullscrButton,
-                'Во весь экран' + this._hotkeyPrint(this._fullscrButton),
-                `<svg viewBox='0 0 36 36'><path d='m 10,16 2,0 0,-4 4,0 0,-2 L 10,10 l 0,6 0,0 z'/><path d='m 20,10 0,2 4,0 0,4 2,0 L 26,10 l -6,0 0,0 z'/><path d='m 24,24 -4,0 0,2 L 26,26 l 0,-6 -2,0 0,4 0,0 z'/><path d='M 12,20 10,20 10,26 l 6,0 0,-2 -4,0 0,-4 0,0 z'/></svg>`
-            );
-        }
-    }
-
-    /**
-     * Преобразовывает длительность в формате 'HH:MM:SS' в число.
-     * @param {string} str
-     * @returns {number}
-     */
-    static _str2dur(str) {
-        let parts = str.split(":", 3).reverse();
-        let result = 0;
-        let m = [1, 60, 3600];
-        for (let i = 0; i < parts.length; i++) {
-            result += parseInt(parts[i]) * m[i];
-        }
-        return result;
-    }
-
-    /**
-     * Преобразовывает длительность в строку формата 'HH:MM:SS'.
-     * @param {number} duration
-     * @returns {string}
-     */
-    static _dur2str(duration) {
-        let m = Math.trunc(duration / 60);
-        let h = Math.trunc(m / 60);
-        let s = Math.trunc(duration - (h * 60 + m) * 60);
-        let result = m + ":" + (s < 10 ? "0" + s : s);
-        if (m >= 60) {
-            result = h + ":" + result;
-        }
-        return result;
-    }
-
-    /**
-     * Меняет состояние кнопки.
-     * @param {HTMLButtonElement} element Элемент контролла.
-     * @param {string} title Новый текст всплывающей подсказки.
-     * @param {string} innerHTML Новое содержимое (SVG иконка).
-     */
-    static _changeButtonState(element, title, innerHTML) {
-        element.title = title;
-        element.innerHTML = innerHTML;
-    }
-
-    /**
-     * Устанавливает скорость воспроизведения из набора по индексу.
-     * @param {HTMLVideoElement} video Элемент проигрывателя.
-     * @param {number} speedIndex Индекс скорости воспроизведния из набора.
-     */
-    _setSpeed(video, speedIndex) {
-        this._playSpeedCur = speedIndex;
-        video.playbackRate = this._playSpeeds[speedIndex];
-    }
-
-    /**
-     * Устанавливает громкость.
-     * @param {Event} e события
-     */
-    _setVolume(e) {
-        let x = e.offsetX;
-
-        if (e.target === this._volumeSliderThumb) {
-            x = e.target.offsetLeft + e.offsetX + 6;
-        }
-
-        const width = e.currentTarget.clientWidth - 1;
-        let val = x / width;
-
-        if (val < 0) {
-            val = 0;
-        } else if (val > 1) {
-            val = 1;
-        }
-
-        this._video.volume = val;
-        this._volumeSliderFill.style.width = `${val * 100}%`;
-
-        if (this._video.muted) {
-            this._video.muted = false;
-        }
-    }
-
-});
-
-
-
-
-window.customElements.define('bv-quality', class HTMLBvQuality extends HTMLElement {
+class HTMLBvQualityList extends HTMLElement  {
 
     constructor() {
         super();
+
+        /**
+         * Логгер класса.
+         * @type {BvLogger} 
+         */
+        this._logger = new BvLogger('QualityList', isDebug);
+
+
+        //#region This Events Handlers
+
+        this.addEventListener('quality-add', e => {
+            this._logger.log('quality add');
+
+            /**
+             * @type {HTMLBvQuality} 
+             */
+            const newQuality = e.detail;
+
+            // Check same value
+            for (let i = 0; i < this.children.length; i++) {
+                /**
+                 * @type {HTMLBvQuality} 
+                 */
+                const quality = this.children[i];
+                if (quality !== newQuality && quality.value === newQuality.value) {
+                    newQuality.invalid = true;
+                }
+            }
+
+            // Notify Parent
+
+            /**
+             * @type {ChangedEventOptions} 
+             */
+            const options = {
+                action: 'added',
+                element: newQuality,
+            };
+            const event = new CustomEvent('qualitylist-changed', {
+                detail: options,
+                cancelable: false,
+                composed: true,
+                bubbles: false,
+            });
+            this.parentElement.dispatchEvent(event);
+        });
+        this.addEventListener('quality-remove', e => {
+            this._logger.log('quality remove');
+
+            /**
+             * @type {HTMLBvQuality} 
+             */
+            const removeQuality = e.detail;
+
+            // Notify Parent
+
+            /**
+             * @type {ChangedEventOptions} 
+             */
+            const options = {
+                action: 'removed',
+                element: removeQuality,
+            };
+            const event = new CustomEvent('qualitylist-changed', {
+                detail: options,
+                cancelable: false,
+                composed: true,
+                bubbles: false,
+            });
+            this.parentElement.dispatchEvent(event);
+        });
+        this.addEventListener('quality-changed', e => {
+            this._logger.log('quality changed');
+
+            /**
+             * @type {HTMLBvQuality} 
+             */
+            const changedQuality = e.detail;
+
+            /**
+             * @type {ChangedEventOptions} 
+             */
+            const options = {
+                action: 'modified',
+                element: changedQuality,
+            };
+            const event = new CustomEvent('qualitylist-changed', {
+                detail: options,
+                cancelable: false,
+                composed: true,
+                bubbles: false,
+            });
+            this.parentElement.dispatchEvent(event);
+        });
+
+        //#endregion This Events Handlers
+
+        this._logger.log('constructor');
+    }
+
+    /**
+    * Компонент добавляется в DOM.
+    */
+    connectedCallback() {
+        this._logger.log('connected');
+    }
+
+    /**
+     * Компонент удаляется из DOM.
+     */
+    disconnectedCallback() {
+        this._logger.log('disconnected');
+    }
+
+}
+window.customElements.define('bv-quality-list', HTMLBvQualityList);
+
+
+
+class HTMLBvQuality extends HTMLElement {
+
+    constructor() {
+        super();
+
+        /**
+         * Логгер класса.
+         * @type {BvLogger} 
+         */
+        this._logger = new BvLogger('Quality', false);
+
+        /**
+         * Коллекция-владелец.
+         * @type {HTMLBvQualityList} 
+         */
+        this._qualityList = null;
 
         /**
          * Значение, которое будет добавляться к URI запроса как параметр.
          * @type {string} 
          */
         this._value = null;
+
+        /**
+         * Элемени не валидный и не используется.
+         * @type {boolean} 
+         */
+        this._invalid = false;
+
+
+        this._logger.log('constructor');
     }
 
     static get observedAttributes() {
-        return ['value'];
+        return ['value', 'invalid'];
     }
 
     get value() { return this._value; }
     set value(v) { this.setAttribute('value', v); }
 
+    get invalid() { return this._invalid; }
+    set invalid(v) { this.setAttribute('invalid', v); }
+
+    /**
+     * Компоненту добавляют, удаляют или изменяют атрибут.
+     * @param {string} name
+     * @param {string} oldValue
+     * @param {string} newValue
+     */
+    attributeChangedCallback(name, oldValue, newValue) {
+
+        if (oldValue === newValue)
+            return;
+
+        if (newValue === null) {
+            newValue = 'false';
+        }
+
+        switch (name) {
+
+            case 'value':
+                if (newValue.toString().length === 0) {
+                    this._logger.error('NULL not valid value.');
+                } else {
+                    this._value = newValue;
+                }
+                this._notifyParent('quality-changed');
+                break;
+
+            case 'invalid':
+                this._invalid = newValue.toLowerCase() !== 'false';
+                if (this._invalid === false) {
+                    this._notifyParent('quality-add');
+                }
+                break;
+        }
+    }
+
+    /**
+     * Компонент добавляется в DOM.
+     */
+    connectedCallback() {
+        this._logger.log(`connected: value = ${this._value}`);
+
+        if (this.parentElement === null || this.parentElement.nodeName !== 'BV-QUALITY-LIST') {
+            this._logger.error(`Тег 'bv-quality' должен находиться внутри элемента 'bv-quality-list'.`);
+        } else {
+            this._qualityList = this.parentElement;
+
+            this._notifyParent('quality-add');
+        }
+    }
+
+    /**
+     * Компонент удаляется из DOM.
+     */
+    disconnectedCallback() {
+        this._logger.log(`disconnected: value = ${this._value}`);
+
+        this._notifyParent('quality-remove');
+    }
+
+    /**
+     * Уведоляет родительский компонент.
+     * @param {string} eventName
+     */
+    _notifyParent(eventName) {
+        if (this._qualityList !== null) {
+            const event = new CustomEvent(eventName, {
+                detail: this,
+                cancelable: false,
+                composed: true,
+                bubbles: true,
+            })
+
+            this._qualityList.dispatchEvent(event);
+        }
+    }
+
+};
+window.customElements.define('bv-quality', HTMLBvQuality);
+
+
+
+class HTMLBvEpisodeList extends HTMLElement {
+
+    constructor() {
+        super();
+
+        /**
+         * Логгер класса.
+         * @type {BvLogger} 
+         */
+        this._logger = new BvLogger('EpisodeList', false);
+
+
+        this._logger.log('constructor');
+    }
+
+    static get observedAttributes() {
+        return [];
+    }
+
+    /**
+     * Компонент добавляется в DOM.
+     */
+    connectedCallback() {
+        const collection = this._getParent();
+        if (collection !== null) {
+            const event = new CustomEvent('addepisodelist', {
+                detail: this,
+            })
+            collection.dispatchEvent(event);
+        }
+
+        this._logger.log('connected');
+    }
+
+    /**
+     * Компонент удаляется из DOM.
+     */
+    disconnectedCallback() {
+        const collection = this._getParent();
+        if (collection !== null) {
+            const event = new CustomEvent('removeepisodelist', {
+                detail: this,
+            })
+            collection.dispatchEvent(event);
+        }
+
+        this._logger.log('disconnected');
+    }
+
+    /**
+     * Ищет родителя-владельца.
+     * @returns {HTMLBvVideoPlayer}
+     */
+    _getParent() {
+        /**
+        * @type {HTMLBvVideoPlayer} 
+        */
+        const player = this.parentElement;
+        if (player === null || player.nodeName !== 'BV-VIDEO-PLAYER') {
+            this._logger.error(`Тег 'bv-episode-list' должен находиться внутри элемента 'bv-video-player'.`);
+            return null;
+        }
+        return player;
+    }
+
+}
+window.customElements.define('bv-episode-list', HTMLBvEpisodeList);
+
+
+
+class HTMLBvEpisode extends HTMLElement {
+
+    constructor() {
+        super();
+
+        /**
+         * Логгер класса.
+         * @type {BvLogger} 
+         */
+        this._logger = new BvLogger('Episode', false);
+
+        /**
+         * Длительность эпизода.
+         * @type {number} 
+         */
+        this._duration = null;
+
+        /**
+         * Название эпизода.
+         * @type {string} 
+         */
+        this._title = null;
+
+
+        this._logger.log('constructor');
+    }
+
+    static get observedAttributes() {
+        return ['duration', 'title'];
+    }
+
+    get duration() { return this._duration; }
+    set duration(v) { this.setAttribute('duration', v); }
+
+    get title() { return this._title; }
+    set title(v) { this.setAttribute('title', v); }
+
+    /**
+     * Компоненту добавляют, удаляют или изменяют атрибут.
+     * @param {string} name
+     * @param {string} oldValue
+     * @param {string} newValue
+     */
     attributeChangedCallback(name, oldValue, newValue) {
 
         if (oldValue === newValue)
@@ -1647,32 +1806,70 @@ window.customElements.define('bv-quality', class HTMLBvQuality extends HTMLEleme
 
         switch (name) {
 
-            case 'value':
+            case 'duration':
+                const val = parseInt(newValue);
+                if (!isNaN(val) || val < 0) {
+                    this._duration = newValue;
+                } else {
+                    this._logger.error(`Invalid value 'duration' property.`);
+                }
+                break;
 
-                this._value = newValue;
+            case 'title':
+                this._title = newValue;
                 break;
 
         }
     }
 
+    /**
+     * Компонент добавляется в DOM.
+     */
     connectedCallback() {
-        /**
-         * @type {HTMLBvVideoPlayer} 
-         */
-        const bvVideoPlayer = this.parentElement;
-        if (bvVideoPlayer === null || bvVideoPlayer.nodeName !== 'BV-VIDEO-PLAYER') {
-            console.error(`Тег 'bv-quality' должен находиться внутри элемента 'bv-video-player'.`);
-            return;
+        const collection = this._getParent();
+        if (collection !== null) {
+            const event = new CustomEvent('addepisode', {
+                detail: this,
+            })
+            collection.dispatchEvent(event);
         }
 
-        // Event
-        const event = new CustomEvent('addquality', {
-            detail: this,
-        })
-        bvVideoPlayer.dispatchEvent(event);
+        this._logger.log('connected');
     }
 
-});
+    /**
+     * Компонент удаляется из DOM.
+     */
+    disconnectedCallback() {
+        const collection = this._getParent();
+        if (collection !== null) {
+            const event = new CustomEvent('removeepisode', {
+                detail: this,
+            })
+            collection.dispatchEvent(event);
+        }
+
+        this._logger.log('disconnected');
+    }
+
+    /**
+     * Ищет родителя-владельца.
+     * @returns {HTMLBvEpisodeList}
+     */
+    _getParent() {
+        /**
+        * @type {HTMLBvEpisodeList}
+        */
+        const episodeList = this.parentElement;
+        if (episodeList === null || episodeList.nodeName !== 'BV-EPISODE-LIST') {
+            this._logger.error(`Тег 'bv-episode' должен находиться внутри элемента 'bv-episode-list'.`);
+            return null;
+        }
+        return episodeList;
+    }
+
+}
+window.customElements.define('bv-episode', HTMLBvEpisode);
 
 
 
