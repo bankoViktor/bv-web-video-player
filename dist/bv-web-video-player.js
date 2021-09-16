@@ -1,29 +1,24 @@
 /*
- * Видео проигрыватель HTML5.
+ * HTML5 video wrapper.
  * 
- * Версия:      0.4.3
- * Автор:       Banko Viktor (bankviktor14@gmail.com)
- * Дата:        01.09.2021
+ * Version:      0.4.3
+ * Author:       Banko Viktor (bankviktor14@gmail.com)
+ * Date:         01.09.2021
  *
+ * Requirement: WebComponents support.
  * 
- * Требования:
- * 
- * - поддержка WebComponents
- *
- *
- *
- * Горячие клавишы:
- *   [H] или [Left] - Перейти на 5 сек раньше
- *   [J] - Уменьшить скорость воспроизведения
- *   [K],[Space] - Старт/стоп/нормальноая скорость
- *   [L] - Увеличить скорость воспроизведения
- *   [;] или [Right] - Перейти на 5 сек позже
- *   [I] - Открыть мини проигрователь
- *   [F] - Во весь экран
- *   [M] - Отключение/включение звука
- *   [0]-[9] или [NumPad 0]-[NumPad 9] - Перейти на % видео
- *   [Up] - Плавное увеличение громкости звука
- *   [Down] - Плавное уменьшение громкости звука
+ * Hotkeys:
+ *   [H] or [Left]                      Go 5 sec earlier.
+ *   [J]                                Decrease playback speed.
+ *   [K],[Space]                        Start/stop/normal speed playback.
+ *   [L]                                Increase playback speed.
+ *   [;] or [Right]                     Go 5 sec late.
+ *   [I]                                Picture in picture mode.
+ *   [F]                                Full screen mode.
+ *   [M]                                Mute.
+ *   [0]-[9] or [NumPad 0]-[NumPad 9]   Перейти на % видео
+ *   [Up]                               Volume increase with 5 step.
+ *   [Down]                             Volume decrease with 5 step.
  *
  * 
  * 
