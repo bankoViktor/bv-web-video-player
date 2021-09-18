@@ -109,81 +109,89 @@
 
 /* PROGRESS BAR  */
 
-.progress-container {
-    height: 9px;
-    margin-bottom: 2px;
-    display: flex;
-    align-items: center;
-    position: relative;
-    background-color: black;
-}
-
 .progress-bar {
-    --anim-duration: 150ms;
     height: 3px;
-    width: 100%;
-    transition: height var(--anim-duration) linear;
+    cursor: pointer;
+    /*background-color: black;*/
 }
-
-.progress-bar-hover {
-    height: 5px;
-}
-
 
 /* EPISODES */
 
-.episodes-container {
-    width: 100%;
-    height: 100%;
+ul.episodes-container {
+    list-style-type: none;
     padding: 0;
     margin: 0;
-    list-style-type: none;
+    width: 100%;
+    height: 100%;
     display: flex;
-    align-items: center;
-    cursor: pointer;
+    flex-direction: row;
 }
 
-    .episodes-container li {
-        --episode-gap: 16px;
-        background-clip: padding-box;
-        transition: height var(--anim-duration) linear;
-        background-color: var(--progress-color);
+    ul.episodes-container > li {
         height: 100%;
         position: relative;
     }
 
-        .episodes-container li:not(.episodes-container li:first-child) {
-            border-left: calc(var(--episode-gap) / 2) solid transparent;
+        ul.episodes-container > li:not(ul.episodes-container > li:first-child) {
+            margin-left: 2px;
         }
-
-        .episodes-container li:not(.episodes-container li:last-child) {
-            border-right: calc(var(--episode-gap) / 2) solid transparent;
-        }
-
-.episode-hover {
-    height: 9px !important;
-}
 
 /* EPISODE CONTENT */
 
-.play-progress,
-.load-progress,
-.hover-progress {
-    height: 100%;
-    width: 0;
+.progress-padding {
     position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 16px;
+    /* debug */
+    /*box-sizing: border-box;
+    border: 0.5px solid blue;*/
+    /*background-color: rgba(255, 0, 0, 0.2);*/
 }
 
-.play-progress {
+    .progress-padding:hover {
+        height: 40px;
+        margin-bottom: -12px;
+    }
+
+.progress-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    margin-top: 0px;
+    transition: 0.1s linear;
+    background-color: var(--progress-color);
+}
+
+ul.progress-list > li {
+    position: absolute;
+    height: 100%;
+    width: 0;
+}
+
+li.progress-play {
     background-color: var(--progress-play-color);
 }
 
-.load-progress {
+li.progress-load {
     background-color: var(--progress-load-color);
 }
 
-.hover-progress {
+li.progress-hover {
     background-color: var(--progress-hover-color);
+}
+
+.episode-hover {
+    margin-top: -1px;
+    height: 5px;
+}
+
+.episode-hover-active {
+    margin-top: -3px;
+    height: 9px;
 }
 
 /* PROGRESS SCRUBBER */

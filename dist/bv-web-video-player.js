@@ -78,6 +78,83 @@ class BvLogger {
 
 
 
+class EpisodeCollection {
+
+    /**
+     * @param {HTMLUListElement} container
+     */
+    constructor(container) {
+        /**
+         * Контейнер с эпизодами
+         * @type {HTMLUListElement}
+         */
+        this._container = container;
+    }
+
+    clear() {
+        this._container.textContent = '';
+    }
+
+    /**
+     * Добавляет новый эпизод.
+     * @param {EpisodeData=} episodeData
+     * @param {number} totalDuration
+     */
+    append(episodeData, totalDuration) {
+        const title = typeof episodeData === 'undefined' || episodeData.title === null
+            ? '' : episodeData.title;
+        const width = typeof episodeData === 'undefined' || isNaN(totalDuration)
+            ? 1 : episodeData.duration / totalDuration;
+
+        const item = document.createElement('li');
+        if (title.length > 0) {
+            item.setAttribute('data-title', title);
+        }
+        item.style.width = width * 100 + '%';
+
+        const list = document.createElement('ul');
+        list.classList.add('progress-list');
+        item.appendChild(list);
+
+        const load = document.createElement('li');
+        load.classList.add('progress-load');
+        //load.style.width = '25%';
+        list.appendChild(load);
+
+        const hover = document.createElement('li');
+        hover.classList.add('progress-hover');
+        //hover.style.width = '50%';
+        list.appendChild(hover);
+
+        const play = document.createElement('li');
+        play.classList.add('progress-play');
+        //play.style.width = '12.5%';
+        list.appendChild(play);
+
+        const padding = document.createElement('div');
+        padding.classList.add('progress-padding');
+        item.appendChild(padding);
+
+        this._container.appendChild(item);
+    }
+
+    /**
+     * Добавляет новый эпизод.
+     * @param {Array<EpisodeData>} episodesData
+     * @param {number} totalDuration
+     */
+    appendRange(episodesData, totalDuration) {
+        for (let i = 0; i < episodesData.length; i++) {
+            const episodeData = episodesData[i];
+
+            this.append(episodeData, totalDuration);
+        }
+    }
+
+}
+
+
+
 class HTMLBvVideoPlayer extends HTMLElement {
 
     constructor() {
@@ -821,47 +898,58 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         //#region --- Create Progress Bar
 
-        const progressBarContainer = document.createElement('div');
-        progressBarContainer.classList.add('progress-container');
-        progressBarContainer.addEventListener('mousemove', e => {
-            const currnetHoverEpisode = getCurrentHoverEpisode(e);
-            if (currnetHoverEpisode !== null) {
-                // Set Current Episode & Reset other & Hover
-                for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                    /**
-                     * @type{HTMLLIElement}
-                     */
-                    const episode = this._episodesContainer.children[i];
-                    if (episode === currnetHoverEpisode) {
-                        currnetHoverEpisode.classList.add('episode-hover');
-                    } else {
-                        episode.classList.remove('episode-hover');
-                    }
-                }
-            }
-            // Set Progress Bar
-            if (this._episodesContainer.children.length > 1) {
-                this._progressBar.classList.add('progress-bar-hover');
-            }
-        });
-        progressBarContainer.addEventListener('mouseleave', e => {
-            // Reset Progress Bar
-            this._progressBar.classList.remove('progress-bar-hover');
-
-            // Reset All Episodes
-            for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                this._episodesContainer.children[i].classList.remove('episode-hover');
-            }
-        });
-        panelWrapper.appendChild(progressBarContainer);
-
         /**
          * Прогресс бар. Содержит список эпизодов и ползунок.
          * @type {HTMLDivElement}
          */
         this._progressBar = document.createElement('div');
         this._progressBar.classList.add('progress-bar');
-        progressBarContainer.appendChild(this._progressBar);
+        this._progressBar.addEventListener('mousemove', e => {
+            const currentHoverEpisode = getCurrentHoverEpisode(e);
+            if (currentHoverEpisode !== null) {
+                let isBefore = true;
+                for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                    /**
+                     * @type{HTMLLIElement}
+                     */
+                    const episode = this._episodesContainer.children[i];
+                    const subItems = getEpisodeSubItems(episode);
+                    if (episode === currentHoverEpisode) {
+                        isBefore = false;
+                        // Scale Episode
+                        subItems.list.classList.add('episode-hover-active');
+                        // Hover
+                        subItems.hover.style.width = e.offsetX + 'px';
+                    } else {
+                        if (isBefore) {
+                            // Hover
+                            subItems.hover.style.width = '100%';
+                        } else {
+                            // Hover
+                            subItems.hover.style.width = '0';
+                        }
+                        // Scale Episode
+                        subItems.list.classList.remove('episode-hover-active');
+                        subItems.list.classList.add('episode-hover');
+                    }
+                }
+            }
+            //console.log(`offsetX ${e.target.offsetWidth} | clientX ${e.target.clientWidth}`);
+        });
+        this._progressBar.addEventListener('mouseleave', e => {
+            for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                /**
+                 * @type{HTMLLIElement}
+                 */
+                const episode = this._episodesContainer.children[i];
+                const subItems = getEpisodeSubItems(episode);
+                // Hover
+                subItems.hover.style.width = '0';
+                // Scale Episode
+                subItems.list.classList.remove('episode-hover-active', 'episode-hover');
+            }
+        });
+        panelWrapper.appendChild(this._progressBar);
 
         /**
          * Список эпизодов.
@@ -870,11 +958,14 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._episodesContainer = document.createElement('ul');
         this._episodesContainer.classList.add('episodes-container');
         this._progressBar.appendChild(this._episodesContainer);
-        //this.appendEpisode();
 
-        const progressScrubber = document.createElement('div');
-        progressScrubber.classList.add('progress-scrubber');
-        progressBarContainer.appendChild(progressScrubber);
+        /**
+         * Красная точка на прогресс-баре.
+         * @type {HTMLDivElement}
+         */
+        this._progressScrubber = document.createElement('div');
+        this._progressScrubber.classList.add('progress-scrubber');
+        this._progressBar.appendChild(this._progressScrubber);
 
         // ---------------------
 
@@ -892,6 +983,27 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 }
             }
             return null;
+        }
+
+        /**
+         * @typedef  {object} EpisodeSubItems
+         * @property {HTMLUListElement} list
+         * @property {HTMLDivElement} hover
+         * @property {HTMLDivElement} load
+         * @property {HTMLDivElement} play
+         */
+
+        /**
+         * @param {HTMLLIElement} episode
+         * @returns {EpisodeSubItems}  
+         */
+        function getEpisodeSubItems(episode) {
+            return {
+                list: episode.querySelector('.progress-list'),
+                hover: episode.querySelector('.progress-hover'),
+                load: episode.querySelector('.progress-load'),
+                play: episode.querySelector('.progress-play'),
+            }
         }
 
         //const progressTrack = document.createElement('div');
@@ -1297,8 +1409,22 @@ class HTMLBvVideoPlayer extends HTMLElement {
             //this._logger.log('progress: network ${networkState} / ready ${readyState}`);
         });
         this._video.addEventListener('canplay', e => { // 6. canplay
-            //this._logger.log('can play');
+            this._logger.log('can play');
             this._spinnerHide();
+
+            // Append Episode
+            const collection = new EpisodeCollection(this._episodesContainer);
+            collection.clear();
+            collection.appendRange([
+                {
+                    title: 'Episode 1',
+                    duration: 0.3 * this._video.duration,
+                },
+                {
+                    title: 'Episode 2',
+                    duration: 0.7 * this._video.duration,
+                }
+            ], this._video.duration);
         });
         this._video.addEventListener('canplaythrough', e => { // 7. canplaythrough 
             //this._logger.log('can play through');
