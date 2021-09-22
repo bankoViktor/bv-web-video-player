@@ -79,16 +79,15 @@
 /* PROGRESS BAR HOVER */
 
 .hover-container {
-    margin-bottom: 5px;
-    width: 100%;
-    /* background-color: rgba(255, 255, 255, 0.5); */
-    width: min-content;
-    max-width: 300px;
-    /* background-color: rgba(255, 0, 255, 0.5); */
+    margin-bottom: 10px;
+    width: 170px;
     color: white;
     font-family: "Gill Sans", sans-serif;
     font-size: 0.8rem;
     text-align: center;
+    opacity: 0;
+    transition: opacity 100ms linear;
+    text-shadow: 0px 0px 14px rgba(0, 34, 0, 1);
 }
 
 .progress-hover-preview {

@@ -882,7 +882,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._hoverCaption = document.createElement('div');
         this._hoverCaption.classList.add('progress-hover-caption');
-        this._hoverCaption.textContent = 'Название эпизода';
+        //this._hoverCaption.textContent = 'Название эпизода';
         this._hoverContainer.appendChild(this._hoverCaption);
 
         /**
@@ -891,7 +891,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._hoverTime = document.createElement('div');
         this._hoverTime.classList.add('progress-hover-time');
-        this._hoverTime.textContent = '1:12:42';
+        //this._hoverTime.textContent = '1:12:42';
         this._hoverContainer.appendChild(this._hoverTime);
 
         //#endregion --- Create Preview, Episode name & Time
@@ -910,7 +910,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 let isBefore = true;
                 for (let i = 0; i < this._episodesContainer.children.length; i++) {
                     /**
-                     * @type{HTMLLIElement}
+                     * @type {HTMLLIElement}
                      */
                     const episode = this._episodesContainer.children[i];
                     const subItems = getEpisodeSubItems(episode);
@@ -933,8 +933,34 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         subItems.list.classList.add('episode-hover');
                     }
                 }
+
+                // Hover Container Preview, Time & Episode Name
+                this._hoverContainer.style.opacity = 1;
+                const offsetX = e.clientX - e.currentTarget.getBoundingClientRect().left;
+                let absOffsetX = Math.max(0, offsetX - this._hoverContainer.clientWidth / 2);
+                absOffsetX = Math.min(absOffsetX, e.currentTarget.clientWidth - this._hoverContainer.clientWidth);
+                this._hoverContainer.style.marginLeft = absOffsetX + 'px';
+                // Episode name
+                const captionMargin = 90; // px
+                if (offsetX <= this._hoverContainer.clientWidth / 2 + captionMargin / 2) {
+                    // left
+                    this._hoverCaption.style.marginLeft = '0px';
+                    this._hoverCaption.style.marginRight = - captionMargin + 'px';
+                } else if (offsetX >= e.currentTarget.clientWidth - this._hoverContainer.clientWidth + captionMargin / 2) {
+                    // right
+                    this._hoverCaption.style.marginLeft = - captionMargin + 'px';
+                    this._hoverCaption.style.marginRight = '0px';
+                } else {
+                    // center
+                    this._hoverCaption.style.marginLeft = - captionMargin / 2 +'px';
+                    this._hoverCaption.style.marginRight = - captionMargin / 2 +'px';
+                }
+                this._hoverCaption.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
+                // Hover Time
+                const pos = offsetX / e.currentTarget.clientWidth;
+                const time = this._video.duration * pos;
+                this._hoverTime.textContent = HTMLBvVideoPlayer._dur2str(time);
             }
-            //console.log(`offsetX ${e.target.offsetWidth} | clientX ${e.target.clientWidth}`);
         });
         this._progressBar.addEventListener('mouseleave', e => {
             for (let i = 0; i < this._episodesContainer.children.length; i++) {
@@ -948,6 +974,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 // Scale Episode
                 subItems.list.classList.remove('episode-hover-active', 'episode-hover');
             }
+
+            // Hover Container Preview, Time & Episode Name
+            this._hoverContainer.style.opacity = 0;
         });
         panelWrapper.appendChild(this._progressBar);
 
@@ -1005,65 +1034,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 play: episode.querySelector('.progress-play'),
             }
         }
-
-        //const progressTrack = document.createElement('div');
-        //progressTrack.classList.add('progress-track');
-        //progressTrack.addEventListener('mousemove', e => {
-        //    const x = e.target.offsetLeft + e.offsetX;
-        //    const width = e.currentTarget.clientWidth;
-        //    const newPosRatio = x / width;
-
-        //    this._progressCursor.style.width = newPosRatio * 100 + "%";
-        //    this._timeCode.removeAttribute('hidden');
-
-        //    const timeCodeWidth = this._timeCode.clientWidth;
-        //    let timeCodePos = x - timeCodeWidth / 2;
-        //    if (x < timeCodeWidth / 2) {
-        //        timeCodePos = 0;
-        //    } else if (x > width - timeCodeWidth / 2) {
-        //        timeCodePos = width - timeCodeWidth;
-        //    }
-
-        //    this._timeCode.style.marginLeft = timeCodePos + 'px';
-
-        //    const pos = this._video.duration * newPosRatio;
-        //    this._timeCode.innerText = HTMLBvVideoPlayer._dur2str(pos);
-        //});
-        //progressTrack.addEventListener('mouseleave', () => {
-        //    this._progressCursor.style.width = "0%";
-        //    this._timeCode.setAttribute('hidden', '');
-        //});
-        //progressTrack.addEventListener('click', e => {
-        //    const x = e.target.offsetLeft + e.offsetX;
-        //    const width = e.currentTarget.clientWidth;
-        //    this._video.currentTime = this._video.duration * (x / width);
-        //});
-
-        ///**
-        // * Список сегментов буферизации.
-        // * @type {HTMLUListElement}
-        // */
-        //this._buffersSegsList = document.createElement('ul');
-
-        //const bufferSegs = document.createElement('div');
-        //bufferSegs.classList.add('segments', 'buffers');
-        //bufferSegs.appendChild(this._buffersSegsList);
-
-        //// Cursor
-
-        ///**
-        // * Полоса заполняющая прогресс бар при перемещении мыши по нем. 
-        // * @type {HTMLDivElement}
-        // */
-        //this._progressCursor = document.createElement('div');
-        //this._progressCursor.classList.add('progress-cursor');
-
-        ///**
-        // * Элемент-заполнитель прогресс бара.
-        // * @type {HTMLDivElement}
-        // */
-        //this._progressPos = document.createElement('div');
-        //this._progressPos.classList.add('progress-pos');
 
         //#endregion --- Create Progress Bar
 
@@ -1293,13 +1263,31 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._video = document.createElement('video');
         this._video.textContent = `Тег video не поддерживается вашим браузером. Обновите браузер.`;
         this._video.addEventListener('timeupdate', e => {
-            /**
-             * @type {HTMLVideoElement} 
-             */
-            const sender = e.currentTarget;
-            const position = sender.currentTime / sender.duration;
-            this._progressPos.style.width = position * 100 + "%";
             this._updateTime();
+
+            const percent = this._video.currentTime / this._video.duration;
+
+            let leftPc = 0;
+            for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                /**
+                 * @type {HTMLLIElement}
+                 */
+                const episode = this._episodesContainer.children[i];
+                const subItems = getEpisodeSubItems(episode);
+
+                const pcPerEpisode = episode.clientWidth / this._progressBar.clientWidth;
+
+                if (percent < leftPc) {
+                    subItems.play.style.width = '0';
+                } else if (percent < leftPc + pcPerEpisode) {
+                    const episodePc = (percent - leftPc) / pcPerEpisode;
+                    subItems.play.style.width = episodePc * 100 + '%';
+                } else {
+                    subItems.play.style.width = '100%';
+                }
+
+                leftPc += pcPerEpisode;
+            }
         });
         this._video.addEventListener('play', () => {
             this._updatePlayButtonState();
@@ -1349,20 +1337,20 @@ class HTMLBvVideoPlayer extends HTMLElement {
              * @type {HTMLVideoElement}
              */
             const sender = e.currentTarget;
-            const buff = sender.buffered;
-            this._buffersSegsList.innerHTML = '';
-            for (let i = 0; i < buff.length; i++) {
-                const start = buff.start(i);
-                const end = buff.end(i);
-                const x = start / sender.duration;
-                const w = end / sender.duration - x;
+            // const buff = sender.buffered;
+            // this._buffersSegsList.innerHTML = '';
+            // for (let i = 0; i < buff.length; i++) {
+            //     const start = buff.start(i);
+            //     const end = buff.end(i);
+            //     const x = start / sender.duration;
+            //     const w = end / sender.duration - x;
 
-                const li = document.createElement('li');
-                li.style.left = x * 100 + '%';
-                li.style.width = w * 100 + '%';
+            //     const li = document.createElement('li');
+            //     li.style.left = x * 100 + '%';
+            //     li.style.width = w * 100 + '%';
 
-                this._buffersSegsList.appendChild(li);
-            }
+            //     this._buffersSegsList.appendChild(li);
+            // }
 
             // Спиннер при загрузке видео
             if (sender.readyState === sender.HAVE_CURRENT_DATA) {
@@ -1409,7 +1397,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             //this._logger.log('progress: network ${networkState} / ready ${readyState}`);
         });
         this._video.addEventListener('canplay', e => { // 6. canplay
-            this._logger.log('can play');
+            //this._logger.log('can play');
             this._spinnerHide();
 
             // Append Episode
@@ -1417,11 +1405,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
             collection.clear();
             collection.appendRange([
                 {
-                    title: 'Episode 1',
+                    title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit vivamus sit amet',
                     duration: 0.3 * this._video.duration,
                 },
                 {
-                    title: 'Episode 2',
+                    title: 'Suspendisse tincidunt laoreet ex consectetur adipiscing elit',
                     duration: 0.7 * this._video.duration,
                 }
             ], this._video.duration);
@@ -1565,7 +1553,7 @@ window.customElements.define('bv-video-player', HTMLBvVideoPlayer);
 
 
 
-class HTMLBvQualityList extends HTMLElement  {
+class HTMLBvQualityList extends HTMLElement {
 
     constructor() {
         super();
@@ -1574,7 +1562,7 @@ class HTMLBvQualityList extends HTMLElement  {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('QualityList', isDebug);
+        this._logger = new BvLogger('QualityList', false);
 
 
         //#region This Events Handlers
