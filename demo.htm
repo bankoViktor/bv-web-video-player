@@ -38,7 +38,30 @@
 
     <div id="out" style="margin-top:20px;">out</div>
 
+    <button id="episodeClear">Episodes Clear</button>
+    Название <input id="episodeTitle" type="text" value="Episode"/>
+    Длительность, % <input id="episodeDuration" type="number" min="0" max="100" value="50"/>
+    <button id="episodeAdd">Episode Add</button>
+
     <script src="dist/bv-web-video-player.js"></script>
+    <script>
+
+      /**
+       * @type {HTMLBvVideoPlayer} 
+       */
+      const player = document.querySelector('bv-video-player');
+
+      document.querySelector('#episodeClear').addEventListener('click', e => {
+        player.removeAllEpisodes();
+      });
+
+      document.querySelector('#episodeAdd').addEventListener('click', e => {
+        player.appendEpisode({
+
+        });
+      });
+
+    </script>
 
   </body>
 </html>

@@ -78,83 +78,6 @@ class BvLogger {
 
 
 
-class EpisodeCollection {
-
-    /**
-     * @param {HTMLUListElement} container
-     */
-    constructor(container) {
-        /**
-         * Контейнер с эпизодами
-         * @type {HTMLUListElement}
-         */
-        this._container = container;
-    }
-
-    clear() {
-        this._container.textContent = '';
-    }
-
-    /**
-     * Добавляет новый эпизод.
-     * @param {EpisodeData=} episodeData
-     * @param {number} totalDuration
-     */
-    append(episodeData, totalDuration) {
-        const title = typeof episodeData === 'undefined' || episodeData.title === null
-            ? '' : episodeData.title;
-        const width = typeof episodeData === 'undefined' || isNaN(totalDuration)
-            ? 1 : episodeData.duration / totalDuration;
-
-        const item = document.createElement('li');
-        if (title.length > 0) {
-            item.setAttribute('data-title', title);
-        }
-        item.style.width = width * 100 + '%';
-
-        const list = document.createElement('ul');
-        list.classList.add('progress-list');
-        item.appendChild(list);
-
-        const load = document.createElement('li');
-        load.classList.add('progress-load');
-        //load.style.width = '25%';
-        list.appendChild(load);
-
-        const hover = document.createElement('li');
-        hover.classList.add('progress-hover');
-        //hover.style.width = '50%';
-        list.appendChild(hover);
-
-        const play = document.createElement('li');
-        play.classList.add('progress-play');
-        //play.style.width = '12.5%';
-        list.appendChild(play);
-
-        const padding = document.createElement('div');
-        padding.classList.add('progress-padding');
-        item.appendChild(padding);
-
-        this._container.appendChild(item);
-    }
-
-    /**
-     * Добавляет новый эпизод.
-     * @param {Array<EpisodeData>} episodesData
-     * @param {number} totalDuration
-     */
-    appendRange(episodesData, totalDuration) {
-        for (let i = 0; i < episodesData.length; i++) {
-            const episodeData = episodesData[i];
-
-            this.append(episodeData, totalDuration);
-        }
-    }
-
-}
-
-
-
 class HTMLBvVideoPlayer extends HTMLElement {
 
     constructor() {
@@ -904,6 +827,33 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._progressBar = document.createElement('div');
         this._progressBar.classList.add('progress-bar');
+        this._progressBar.addEventListener('click', e => {
+            debugger
+            const currentHoverEpisode = getCurrentHoverEpisode(e);
+            if (currentHoverEpisode !== null) {
+                let isBefore = true;
+                for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                    /**
+                     * @type {HTMLLIElement}
+                     */
+                    const episode = this._episodesContainer.children[i];
+                    const subItems = getEpisodeSubItems(episode);
+                    if (episode === currentHoverEpisode) {
+                        isBefore = false;
+                        // Scale Episode
+                        subItems.play.style.width = '25%';
+                    } else {
+                        if (isBefore) {
+                            subItems.play.style.width = '100%';
+                        } else {
+                            subItems.play.style.width = '0';
+                        }
+                    }
+                }
+
+                this._video.currentTime = 15;
+            }
+        });
         this._progressBar.addEventListener('mousemove', e => {
             const currentHoverEpisode = getCurrentHoverEpisode(e);
             if (currentHoverEpisode !== null) {
@@ -960,9 +910,13 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 const pos = offsetX / e.currentTarget.clientWidth;
                 const time = this._video.duration * pos;
                 this._hoverTime.textContent = HTMLBvVideoPlayer._dur2str(time);
+                // Scrubber
+                this._progressScrubber.style.left = this._video.currentTime / this._video.duration * 100 + '%';
+                this._progressScrubber.classList.add('progress-scrubber-hover');
             }
         });
         this._progressBar.addEventListener('mouseleave', e => {
+            // Episodes
             for (let i = 0; i < this._episodesContainer.children.length; i++) {
                 /**
                  * @type{HTMLLIElement}
@@ -974,9 +928,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 // Scale Episode
                 subItems.list.classList.remove('episode-hover-active', 'episode-hover');
             }
-
             // Hover Container Preview, Time & Episode Name
             this._hoverContainer.style.opacity = 0;
+            // Scrubber
+            this._progressScrubber.classList.remove('progress-scrubber-hover');
         });
         panelWrapper.appendChild(this._progressBar);
 
@@ -1288,6 +1243,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
                 leftPc += pcPerEpisode;
             }
+
+            // Scrubber
+            this._progressScrubber.style.left = this._video.currentTime / this._video.duration * 100 + '%';
         });
         this._video.addEventListener('play', () => {
             this._updatePlayButtonState();
@@ -1401,9 +1359,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._spinnerHide();
 
             // Append Episode
-            const collection = new EpisodeCollection(this._episodesContainer);
-            collection.clear();
-            collection.appendRange([
+            this.removeAllEpisodes();
+            this.appendEpisodes([
                 {
                     title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit vivamus sit amet',
                     duration: 0.3 * this._video.duration,
@@ -1412,7 +1369,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     title: 'Suspendisse tincidunt laoreet ex consectetur adipiscing elit',
                     duration: 0.7 * this._video.duration,
                 }
-            ], this._video.duration);
+            ]);
         });
         this._video.addEventListener('canplaythrough', e => { // 7. canplaythrough 
             //this._logger.log('can play through');
@@ -1547,6 +1504,69 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     //#endregion Create Functions
+
+    /**
+     * Удалить все эпизоды.
+     */
+    removeAllEpisodes() {
+        while (this._episodesContainer.children.length > 0) {
+            this._episodesContainer.children[0].remove();
+        }
+    }
+
+    /**
+     * Добавляет новый эпизод.
+     * @param {EpisodeData=} episodeData
+     */
+    appendEpisode(episodeData) {
+        if (typeof episodeData === 'undefined') {
+            console.error('Не заданы данные епизодов.');
+            return;
+        }
+
+        const item = document.createElement('li');
+        if (typeof episodeData.title !== 'undefined' && episodeData.title !== null && episodeData.title.length > 0) {
+            item.setAttribute('data-title', episodeData.title);
+        }
+        item.style.width = (episodeData.duration / this._video.duration) * 100 + '%';
+
+        const list = document.createElement('ul');
+        list.classList.add('progress-list');
+        item.appendChild(list);
+
+        const load = document.createElement('li');
+        load.classList.add('progress-load');
+        //load.style.width = '25%';
+        list.appendChild(load);
+
+        const hover = document.createElement('li');
+        hover.classList.add('progress-hover');
+        //hover.style.width = '50%';
+        list.appendChild(hover);
+
+        const play = document.createElement('li');
+        play.classList.add('progress-play');
+        //play.style.width = '12.5%';
+        list.appendChild(play);
+
+        const padding = document.createElement('div');
+        padding.classList.add('progress-padding');
+        item.appendChild(padding);
+
+        this._episodesContainer.appendChild(item);
+    }
+
+    /**
+     * Добавляет новые эпизоды.
+     * @param {Array<EpisodeData>} episodesData
+     */
+    appendEpisodes(episodesData) {
+        for (let i = 0; i < episodesData.length; i++) {
+            const episodeData = episodesData[i];
+
+            this.appendEpisode(episodeData);
+        }
+    }
 
 };
 window.customElements.define('bv-video-player', HTMLBvVideoPlayer);

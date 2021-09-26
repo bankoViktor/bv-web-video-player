@@ -111,6 +111,7 @@
 .progress-bar {
     height: 3px;
     cursor: pointer;
+    position: relative;
     /*background-color: black;*/
 }
 
@@ -204,7 +205,7 @@ li.progress-hover {
     left: 0;
     transform: translateX(-50%) translateY(-50%);
     background-color: var(--progress-play-color);
-    transition: all 100ms linear;
+    /* transition: all 100ms linear; */
     cursor: pointer;
 }
 
