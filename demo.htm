@@ -10,16 +10,21 @@
       .block-for-video {
         height: 480px;
       }
+      .qsup {
+        color: red;
+        font-weight: bolder;
+        font-size: 0.7rem;
+      }
     </style>
   </head>
   <body>
 
     <div class="block-for-video">
-      <bv-video-player src="https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_1920_18MG.mp4" speed-controls hotkey>
+      <bv-video-player src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" speed-controls hotkey>
 
         <bv-quality-list>
-          <bv-quality value="1080">1080p<sup style="color: red;">FHD</sup></bv-quality>
-          <bv-quality value="720">720p<sup style="color: red;">HD</sup></bv-quality>
+          <bv-quality value="1080">1080p <sup class="qsup">FHD</sup></bv-quality>
+          <bv-quality value="720">720p <sup class="qsup">HD</sup></bv-quality>
           <bv-quality value="480">480p</bv-quality>
         </bv-quality-list>
 
@@ -57,7 +62,8 @@
 
       document.querySelector('#episodeAdd').addEventListener('click', e => {
         player.appendEpisode({
-
+          title: document.querySelector('#episodeTitle').value,
+          duration: (document.querySelector('#episodeDuration').value / 100) * player._video.duration,
         });
       });
 

@@ -870,6 +870,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         subItems.list.classList.add('episode-hover-active');
                         // Hover
                         subItems.hover.style.width = e.offsetX + 'px';
+                        // Scrubber
+                        this._progressScrubber.classList.remove('progress-scrubber-episode-hover');
+                        this._progressScrubber.classList.add('progress-scrubber-hover');
                     } else {
                         if (isBefore) {
                             // Hover
@@ -881,6 +884,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         // Scale Episode
                         subItems.list.classList.remove('episode-hover-active');
                         subItems.list.classList.add('episode-hover');
+                        // Scrubber
+                        this._progressScrubber.classList.remove('progress-scrubber-hover');
+                        this._progressScrubber.classList.add('progress-scrubber-episode-hover');
                     }
                 }
 
@@ -902,18 +908,15 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     this._hoverCaption.style.marginRight = '0px';
                 } else {
                     // center
-                    this._hoverCaption.style.marginLeft = - captionMargin / 2 +'px';
-                    this._hoverCaption.style.marginRight = - captionMargin / 2 +'px';
+                    this._hoverCaption.style.marginLeft = - captionMargin / 2 + 'px';
+                    this._hoverCaption.style.marginRight = - captionMargin / 2 + 'px';
                 }
                 this._hoverCaption.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
                 // Hover Time
                 const pos = offsetX / e.currentTarget.clientWidth;
                 const time = this._video.duration * pos;
                 this._hoverTime.textContent = HTMLBvVideoPlayer._dur2str(time);
-                // Scrubber
-                this._progressScrubber.style.left = this._video.currentTime / this._video.duration * 100 + '%';
-                this._progressScrubber.classList.add('progress-scrubber-hover');
-            }
+            } 
         });
         this._progressBar.addEventListener('mouseleave', e => {
             // Episodes
@@ -931,7 +934,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             // Hover Container Preview, Time & Episode Name
             this._hoverContainer.style.opacity = 0;
             // Scrubber
-            this._progressScrubber.classList.remove('progress-scrubber-hover');
+            this._progressScrubber.classList.remove('progress-scrubber-hover', 'progress-scrubber-episode-hover');
         });
         panelWrapper.appendChild(this._progressBar);
 

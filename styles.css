@@ -205,8 +205,7 @@ li.progress-hover {
     left: 0;
     transform: translateX(-50%) translateY(-50%);
     background-color: var(--progress-play-color);
-    /* transition: all 100ms linear; */
-    cursor: pointer;
+    transition: all 50ms linear; 
 }
 
 .progress-scrubber-hover {
