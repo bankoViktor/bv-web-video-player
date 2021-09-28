@@ -76,7 +76,7 @@
     background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 90%);
 }
 
-/* PROGRESS BAR HOVER */
+/* PROGRESS BAR CONTAINER */
 
 .hover-container {
     margin-bottom: 10px;
@@ -112,7 +112,6 @@
     height: 3px;
     cursor: pointer;
     position: relative;
-    /*background-color: black;*/
 }
 
 /* EPISODES */
@@ -143,10 +142,6 @@ ul.episodes-container {
     bottom: 0;
     width: 100%;
     height: 16px;
-    /* debug */
-    /*box-sizing: border-box;
-    border: 0.5px solid blue;*/
-    /*background-color: rgba(255, 0, 0, 0.2);*/
 }
 
     .progress-padding:hover {
@@ -227,36 +222,6 @@ li.progress-hover {
 .left-panel {
     flex-grow: 1;
 }
-
-
-/*.progress-track {
-    position: relative;
-    background-color: var(--progress-color);
-    height: 50%;
-    transform: translateY(+50%);
-}
-
-    .progress-track:hover {
-        height: 100%;
-        transform: translateY(0);
-        cursor: pointer;
-    }
-
-.progress-pos,
-.progress-cursor {
-    position: absolute;
-    height: 100%;
-    width: 0%;
-}
-
-.progress-pos {
-    background-color: var(--progress-time-color);*/
-/*transition: width 0.3s linear;*/
-/*}
-
-.progress-cursor {
-    background-color: var(--progress-cursor-color);
-}*/
 
 /* SEGMENTS */
 

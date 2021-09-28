@@ -805,7 +805,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._hoverCaption = document.createElement('div');
         this._hoverCaption.classList.add('progress-hover-caption');
-        //this._hoverCaption.textContent = 'Название эпизода';
         this._hoverContainer.appendChild(this._hoverCaption);
 
         /**
@@ -814,7 +813,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._hoverTime = document.createElement('div');
         this._hoverTime.classList.add('progress-hover-time');
-        //this._hoverTime.textContent = '1:12:42';
         this._hoverContainer.appendChild(this._hoverTime);
 
         //#endregion --- Create Preview, Episode name & Time
@@ -855,6 +853,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
             }
         });
         this._progressBar.addEventListener('mousemove', e => {
+            const offsetX = e.clientX - e.currentTarget.getBoundingClientRect().left;
+            const hoverPos = offsetX / e.currentTarget.clientWidth;
+            const hoverTime = this._video.duration * hoverPos;
+
             const currentHoverEpisode = getCurrentHoverEpisode(e);
             if (currentHoverEpisode !== null) {
                 let isBefore = true;
@@ -891,11 +893,43 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 }
 
                 // Hover Container Preview, Time & Episode Name
-                this._hoverContainer.style.opacity = 1;
-                const offsetX = e.clientX - e.currentTarget.getBoundingClientRect().left;
                 let absOffsetX = Math.max(0, offsetX - this._hoverContainer.clientWidth / 2);
                 absOffsetX = Math.min(absOffsetX, e.currentTarget.clientWidth - this._hoverContainer.clientWidth);
                 this._hoverContainer.style.marginLeft = absOffsetX + 'px';
+                this._hoverContainer.style.opacity = 1;
+                // Preview
+                const previewNumber = Math.floor(hoverTime / this._previewStep);
+                if (this._hoverPreview.currentPreview !== previewNumber) {
+                    this._hoverPreview.currentPreview = previewNumber;
+
+                    const previewPerImage = this._previewsPerImageColumn * this._previewsPerImageRow;
+                    const imageNumber = Math.floor(previewNumber / previewPerImage);
+
+                    if (this._hoverPreview.currentPreviewImage !== imageNumber) {
+                        this._hoverPreview.currentPreviewImage = imageNumber;
+
+                        // Change image with previews
+                        const imageUrl = this._previewsHref.replace('{0}', imageNumber);
+                        this._hoverPreview.style.backgroundImage = `url("${imageUrl}")`;
+
+                        // Hide if preview failed load
+                        const checkImg = document.createElement('img');
+                        checkImg.addEventListener('load', e => {
+                            this._hoverPreview.style.visibility = 'visible';
+                        });
+                        checkImg.addEventListener('error', e => {
+                            this._hoverPreview.style.visibility = 'collapse';
+                        });
+                        checkImg.src = imageUrl;
+                    }
+
+                    const lastPreviewNumber = previewNumber - imageNumber * previewPerImage;
+                    const row = Math.floor(lastPreviewNumber / this._previewsPerImageRow);
+                    const column = lastPreviewNumber - row * this._previewsPerImageColumn;
+                   
+                    this._hoverPreview.style.backgroundPositionX = `calc(var(--preview-width) * -${column})`;
+                    this._hoverPreview.style.backgroundPositionY = `calc(var(--preview-height) * -${row})`;
+                }
                 // Episode name
                 const captionMargin = 90; // px
                 if (offsetX <= this._hoverContainer.clientWidth / 2 + captionMargin / 2) {
@@ -913,9 +947,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 }
                 this._hoverCaption.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
                 // Hover Time
-                const pos = offsetX / e.currentTarget.clientWidth;
-                const time = this._video.duration * pos;
-                this._hoverTime.textContent = HTMLBvVideoPlayer._dur2str(time);
+                this._hoverTime.textContent = HTMLBvVideoPlayer._dur2str(hoverTime);
             } 
         });
         this._progressBar.addEventListener('mouseleave', e => {
