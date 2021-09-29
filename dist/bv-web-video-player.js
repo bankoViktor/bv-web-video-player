@@ -170,6 +170,30 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._moveTimerCount = this._fadeCtrlSec;
 
         /**
+         * Шаг показа миниатюр, в секундах.
+         * @type {number} 
+         */
+        this._previewStep = 10;
+
+        /**
+         * Количество столбцов миниатюр.
+         * @type {number} 
+         */
+        this._previewsPerImageColumn = 5;
+
+        /**
+         * Количество строк миниатюр.
+         * @type {number} 
+         */
+        this._previewsPerImageRow = 5;
+
+        /**
+         * Формат изображений миниатюр. Место под номер изображения - '{0}'.
+         * @type {string} 
+         */
+        this._previewsHref = 'preview_{0}.png';
+
+        /**
          * Флаг инициализации компонента.
          * @type {boolean} 
          */
@@ -796,7 +820,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._hoverPreview = document.createElement('div');
         this._hoverPreview.classList.add('progress-hover-preview');
-        this._hoverPreview.style.background = 'url(https://picsum.photos/id/37/158/90)';
         this._hoverContainer.appendChild(this._hoverPreview);
 
         /**
@@ -825,33 +848,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._progressBar = document.createElement('div');
         this._progressBar.classList.add('progress-bar');
-        this._progressBar.addEventListener('click', e => {
-            debugger
-            const currentHoverEpisode = getCurrentHoverEpisode(e);
-            if (currentHoverEpisode !== null) {
-                let isBefore = true;
-                for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                    /**
-                     * @type {HTMLLIElement}
-                     */
-                    const episode = this._episodesContainer.children[i];
-                    const subItems = getEpisodeSubItems(episode);
-                    if (episode === currentHoverEpisode) {
-                        isBefore = false;
-                        // Scale Episode
-                        subItems.play.style.width = '25%';
-                    } else {
-                        if (isBefore) {
-                            subItems.play.style.width = '100%';
-                        } else {
-                            subItems.play.style.width = '0';
-                        }
-                    }
-                }
 
-                this._video.currentTime = 15;
-            }
-        });
         this._progressBar.addEventListener('mousemove', e => {
             const offsetX = e.clientX - e.currentTarget.getBoundingClientRect().left;
             const hoverPos = offsetX / e.currentTarget.clientWidth;

@@ -90,14 +90,21 @@
     text-shadow: 0px 0px 14px rgba(0, 34, 0, 1);
 }
 
+/* Progress Bar Preview */
+
 .progress-hover-preview {
+    --preview-width: 158px;
+    --preview-height: 90px;
     margin: 0 auto;
-    width: 158px;
-    height: 90px;
+    width: var(--preview-width);
+    height: var(--preview-height);
     border: 3px solid white;
     border-radius: 3px;
     margin-bottom: 5px;
+    background-repeat: no-repeat;
 }
+
+/* Progress Bar Caption */
 
 .progress-hover-caption {
     white-space: nowrap;
