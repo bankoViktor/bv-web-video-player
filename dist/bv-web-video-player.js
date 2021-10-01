@@ -316,38 +316,54 @@ class HTMLBvVideoPlayer extends HTMLElement {
             }
         });
         window.addEventListener('mousemove', e => {
-            const seekTime = this._getTimeByPageX(e.pageX);
-
-            if (this._isMouseDown) {
-                this._setProgressPlayPosition(seekTime);
+            const updateScaling = () => {
+                const currentHoverEpisode = this._getCurrentHoverEpisode(e.pageX);
+                for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                    /**
+                     * @type {HTMLLIElement}
+                     */
+                    const episode = this._episodesContainer.children[i];
+                    if (episode === currentHoverEpisode) {
+                        // Scale Episode & Padding
+                        episode.classList.remove('episode-hover-active');
+                        episode.classList.add('episode-hover-current', 'episode-padding-hover');
+                    } else {
+                        // Scale Episode & Padding
+                        episode.classList.remove('episode-hover-current', 'episode-padding-hover');
+                        episode.classList.add('episode-hover-active');
+                    }
+                }
             }
 
-            if (e.path.includes(this._progressBar)) {
-
-                this._setProgressHoverPosition(seekTime, e);
-
-                //const currentHoverEpisode = this._getCurrentHoverEpisode(e);
-                //if (currentHoverEpisode !== null) {
-                //    for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                //        /**
-                //         * @type {HTMLLIElement}
-                //         */
-                //        const episode = this._episodesContainer.children[i];
-                //        if (episode === currentHoverEpisode) {
-                //            // Scale Episode
-                //            episode.classList.remove('episode-hover-active');
-                //            episode.classList.add('episode-hover-current');
-                //            // Padding
-                //            episode.classList.add('episode-padding-hover');
-                //        } else {
-                //            // Scale Episode
-                //            episode.classList.remove('episode-hover-current');
-                //            episode.classList.add('episode-hover-active');
-                //            // Padding
-                //            episode.classList.remove('episode-padding-hover');
-                //        }
-                //    }
-                //}
+            const hoverTime = this._getTimeByPageX(e.pageX);
+            if (hoverTime != null) {
+                if (this._isMouseDown) {
+                    this._setProgressPlayPosition(hoverTime);
+                    this._setProgressSeekPosition(hoverTime, e.pageX);
+                    this._setProgressSubItemsPosition('hover', hoverTime);
+                    // Scale
+                    updateScaling();
+                } else {
+                    if (e.path.includes(this._progressBar)) {
+                        this._setProgressSeekPosition(hoverTime, e.pageX);
+                        this._setProgressSubItemsPosition('hover', hoverTime);
+                        // Scale
+                        updateScaling();
+                    } else {
+                        // Reset Scale
+                        for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                            /**
+                             * @type {HTMLLIElement}
+                             */
+                            const episode = this._episodesContainer.children[i];
+                            const subItems = HTMLBvVideoPlayer._getEpisodeSubItems(episode);
+                            episode.classList.remove('episode-hover-active', 'episode-hover-current', 'episode-padding-hover');
+                            subItems.hover.style.width = 0;
+                        }
+                        // Seek
+                        this._seekContainer.style.opacity = 0;
+                    }
+                }
             }
         });
 
@@ -776,15 +792,15 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * @param {number} pageX
-     * @returns {number}
+     * @returns {number?}
      */
     _getTimeByPageX(pageX) {
         const bounding = this._progressBar.getBoundingClientRect();
-        if (pageX < bounding.left || pageX >= bounding.right) {
-            console.error(`Значение параметра 'pageX' выходит за пределы диапазона: ${pageX} не принадлежит [${bounding.left}, ${bounding.right}].`);
+        if (pageX >= bounding.left && pageX < bounding.right) {
+            const percent = (pageX - bounding.left) / bounding.width;
+            return percent * this._video.duration;
         }
-        const percent = (pageX - bounding.left) / bounding.width;
-        return percent * this._video.duration;
+        return null;
     }
 
     /**
@@ -832,14 +848,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * @param {number} time
-     * @param {Event} e
+     * @param {number} pageX
      */
-    _setProgressHoverPosition(time, e) {
-        // Hover Sub Item
-        this._setProgressSubItemsPosition('hover', time);
-
+    _setProgressSeekPosition(time, pageX) {
         // Seek Container
-        let marginLeft = e.pageX - this._progressBar.getBoundingClientRect().left;
+        let marginLeft = pageX - this._progressBar.getBoundingClientRect().left;
         marginLeft = Math.max(0, marginLeft - this._seekContainer.clientWidth / 2);
         marginLeft = Math.min(marginLeft, this._progressBar.clientWidth - this._seekContainer.clientWidth);
         this._seekContainer.style.marginLeft = marginLeft + 'px';
@@ -857,7 +870,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._hoverPreview.currentPreviewImage = imageNumber;
 
                 // Change image with previews
-                const imageUrl = this._previewsHref.replace('{0}', imageNumber);
+                const imageUrl = this._previewsHref.replace('{0}', 0);// imageNumber);
                 this._hoverPreview.style.backgroundImage = `url("${imageUrl}")`;
 
                 // Hide if preview failed load
@@ -885,24 +898,26 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._hoverCaption.style.marginRight = 0;
         }
 
-        const currentHoverEpisode = this._getCurrentHoverEpisode(e);
-        this._hoverCaption.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
-        const marginToggle = (this._hoverCaption.clientWidth - this._hoverPreview.offsetWidth) / 2;
-        if (marginLeft <= marginToggle) {
-            // left
-            this._hoverCaption.style.marginLeft = 0;
-            const margin = this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth ? - this._hoverCaption.clientWidth / 2 : 0;
-            this._hoverCaption.style.marginRight = margin + 'px';
-        } else if (marginLeft >= this._progressBar.clientWidth - this._hoverPreview.offsetWidth - marginToggle) {
-            // rigth
-            const margin = this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth ? this._hoverPreview.offsetWidth - this._hoverCaption.clientWidth : 0;
-            this._hoverCaption.style.marginLeft = margin + 'px';
-            this._hoverCaption.style.marginRight = 0;
-        } else {
-            // center
-            if (this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth) {
-                this._hoverCaption.style.marginLeft = - marginToggle + 'px';
-                this._hoverCaption.style.marginRight = - marginToggle + 'px';
+        const currentHoverEpisode = this._getCurrentHoverEpisode(pageX);
+        if (currentHoverEpisode !== null) {
+            this._hoverCaption.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
+            const marginToggle = (this._hoverCaption.clientWidth - this._hoverPreview.offsetWidth) / 2;
+            if (marginLeft <= marginToggle) {
+                // left
+                this._hoverCaption.style.marginLeft = 0;
+                const margin = this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth ? - this._hoverCaption.clientWidth / 2 : 0;
+                this._hoverCaption.style.marginRight = margin + 'px';
+            } else if (marginLeft >= this._progressBar.clientWidth - this._hoverPreview.offsetWidth - marginToggle) {
+                // rigth
+                const margin = this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth ? this._hoverPreview.offsetWidth - this._hoverCaption.clientWidth : 0;
+                this._hoverCaption.style.marginLeft = margin + 'px';
+                this._hoverCaption.style.marginRight = 0;
+            } else {
+                // center
+                if (this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth) {
+                    this._hoverCaption.style.marginLeft = - marginToggle + 'px';
+                    this._hoverCaption.style.marginRight = - marginToggle + 'px';
+                }
             }
         }
 
@@ -911,10 +926,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     /**
-     * @param {Event} e
+     * @param {number} pageX
      * @returns {HTMLLIElement} 
      */
-    _getCurrentHoverEpisode(e) {
+    _getCurrentHoverEpisode(pageX) {
         for (let i = 0; i < this._episodesContainer.children.length; i++) {
             /**
              * @type {HTMLLIElement} 
@@ -931,7 +946,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 left = previousEpisode.getBoundingClientRect().right;
             }
 
-            if (e.pageX >= left && e.pageX < bounding.right) {
+            if (pageX >= left && pageX < bounding.right) {
                 return episode;
             }
         }
@@ -1083,29 +1098,13 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._progressBar.addEventListener('mousedown', e => {
             if (e.button === 0) { // Main
                 this._isMouseDown = true;
+
                 this._video.pause();
                 const hoverTime = this._getTimeByPageX(e.pageX);
-                this._setProgressPlayPosition(hoverTime);
+                if (hoverTime != null) {
+                    this._setProgressPlayPosition(hoverTime);
+                }
             }
-        });
-        this._progressBar.addEventListener('mouseleave', e => {
-            // Episodes
-            for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                /**
-                 * @type{HTMLLIElement}
-                 */
-                const episode = this._episodesContainer.children[i];
-                const subItems = HTMLBvVideoPlayer._getEpisodeSubItems(episode);
-                // Hover
-                subItems.hover.style.width = '0';
-                // Scale & Padding Episode
-                //episode.classList.remove('episode-hover-active', 'episode-hover-current', 'episode-padding-hover');
-            }
-
-            // Hover Container Preview, Time & Episode Name
-            //this._hoverContainer.style.opacity = 0;
-            // Scrubber
-            //this._progressScrubber.classList.remove('progress-scrubber-hover', 'progress-scrubber-episode-hover');
         });
         panelWrapper.appendChild(this._progressBar);
 
