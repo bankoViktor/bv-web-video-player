@@ -191,7 +191,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * Формат изображений миниатюр. Место под номер изображения - '{0}'.
          * @type {string} 
          */
-        this._previewsHref = 'preview_{0}.png';
+        this._previewsHref = 'example-previews/preview_{0}.png';
 
         /**
          * Флаг инициализации компонента.
@@ -866,11 +866,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
             const previewPerImage = this._previewsPerImageColumn * this._previewsPerImageRow;
             const imageNumber = Math.floor(previewNumber / previewPerImage);
 
+            /**
+             * Номер первого изображения. 
+             */
+            const imageNumberBase = 1;
+
             if (this._hoverPreview.currentPreviewImage !== imageNumber) {
                 this._hoverPreview.currentPreviewImage = imageNumber;
 
                 // Change image with previews
-                const imageUrl = this._previewsHref.replace('{0}', 0);// imageNumber);
+                const imageUrl = this._previewsHref.replace('{0}', imageNumberBase + imageNumber);
                 this._hoverPreview.style.backgroundImage = `url("${imageUrl}")`;
 
                 // Hide if preview failed load
