@@ -305,6 +305,51 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 e.preventDefault();
             }
         });
+        //window.addEventListener('mousedown', e => {
+        //    if (this._isMouseDown && e.button === 0) { // Main
+        //        this._isMouseDown = false;
+        //    }
+        //});
+        window.addEventListener('mouseup', e => {
+            if (this._isMouseDown && e.button === 0) { // Main
+                this._isMouseDown = false;
+            }
+        });
+        window.addEventListener('mousemove', e => {
+            const seekTime = this._getTimeByPageX(e.pageX);
+
+            if (this._isMouseDown) {
+                this._setProgressPlayPosition(seekTime);
+            }
+
+            if (e.path.includes(this._progressBar)) {
+
+                this._setProgressHoverPosition(seekTime, e);
+
+                //const currentHoverEpisode = this._getCurrentHoverEpisode(e);
+                //if (currentHoverEpisode !== null) {
+                //    for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                //        /**
+                //         * @type {HTMLLIElement}
+                //         */
+                //        const episode = this._episodesContainer.children[i];
+                //        if (episode === currentHoverEpisode) {
+                //            // Scale Episode
+                //            episode.classList.remove('episode-hover-active');
+                //            episode.classList.add('episode-hover-current');
+                //            // Padding
+                //            episode.classList.add('episode-padding-hover');
+                //        } else {
+                //            // Scale Episode
+                //            episode.classList.remove('episode-hover-current');
+                //            episode.classList.add('episode-hover-active');
+                //            // Padding
+                //            episode.classList.remove('episode-padding-hover');
+                //        }
+                //    }
+                //}
+            }
+        });
 
         //#endregion Window Events Handlers
 
@@ -729,6 +774,193 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     //#endregion Update Functions
 
+    /**
+     * @param {number} pageX
+     * @returns {number}
+     */
+    _getTimeByPageX(pageX) {
+        const bounding = this._progressBar.getBoundingClientRect();
+        if (pageX < bounding.left || pageX >= bounding.right) {
+            console.error(`Значение параметра 'pageX' выходит за пределы диапазона: ${pageX} не принадлежит [${bounding.left}, ${bounding.right}].`);
+        }
+        const percent = (pageX - bounding.left) / bounding.width;
+        return percent * this._video.duration;
+    }
+
+    /**
+     * 
+     * @param {'play'|'hover'} subItem
+     * @param {any} time
+     */
+    _setProgressSubItemsPosition(subItem, time) {
+        const progressBounding = this._progressBar.getBoundingClientRect();
+        const progressLeft = progressBounding.left + time / this._video.duration * progressBounding.width;
+
+        for (let i = 0; i < this._episodesContainer.children.length; i++) {
+            /**
+             * @type {HTMLLIElement}
+             */
+            const episode = this._episodesContainer.children[i];
+            const episodeSubItem = HTMLBvVideoPlayer._getEpisodeSubItems(episode)[subItem];
+
+            const episodeBounding = episode.getBoundingClientRect();
+            const paddingLeft = i > 0 ? episode.querySelector('div > ul').getBoundingClientRect().left - episodeBounding.left : 0;
+
+            const episodeLeft = episodeBounding.left + paddingLeft;
+            const episodeWidth = episodeBounding.width - paddingLeft;
+
+            if (progressLeft < episodeLeft) {
+                episodeSubItem.style.width = '0';
+            } else if (progressLeft >= episodeLeft && progressLeft < episodeLeft + episodeWidth) {
+                const percent = (progressLeft - episodeLeft) / episodeWidth;
+                episodeSubItem.style.width = percent * 100 + '%';
+            } else {
+                episodeSubItem.style.width = '100%';
+            }
+        }
+    }
+
+    /**
+     * @param {number} time
+     */
+    _setProgressPlayPosition(time) {
+        this._setProgressSubItemsPosition('play', time);
+
+        // Scrubber
+        this._progressScrubber.style.left = time / this._video.duration * 100 + '%';
+    }
+
+    /**
+     * @param {number} time
+     * @param {Event} e
+     */
+    _setProgressHoverPosition(time, e) {
+        // Hover Sub Item
+        this._setProgressSubItemsPosition('hover', time);
+
+        // Seek Container
+        let marginLeft = e.pageX - this._progressBar.getBoundingClientRect().left;
+        marginLeft = Math.max(0, marginLeft - this._seekContainer.clientWidth / 2);
+        marginLeft = Math.min(marginLeft, this._progressBar.clientWidth - this._seekContainer.clientWidth);
+        this._seekContainer.style.marginLeft = marginLeft + 'px';
+        this._seekContainer.style.opacity = 1;
+
+        // Seek Preview
+        const previewNumber = Math.floor(time / this._previewStep);
+        if (this._hoverPreview.currentPreview !== previewNumber) {
+            this._hoverPreview.currentPreview = previewNumber;
+
+            const previewPerImage = this._previewsPerImageColumn * this._previewsPerImageRow;
+            const imageNumber = Math.floor(previewNumber / previewPerImage);
+
+            if (this._hoverPreview.currentPreviewImage !== imageNumber) {
+                this._hoverPreview.currentPreviewImage = imageNumber;
+
+                // Change image with previews
+                const imageUrl = this._previewsHref.replace('{0}', imageNumber);
+                this._hoverPreview.style.backgroundImage = `url("${imageUrl}")`;
+
+                // Hide if preview failed load
+                const checkImg = document.createElement('img');
+                checkImg.addEventListener('load', e => {
+                    this._hoverPreview.style.visibility = 'visible';
+                });
+                checkImg.addEventListener('error', e => {
+                    this._hoverPreview.style.visibility = 'collapse';
+                });
+                checkImg.src = imageUrl;
+            }
+
+            const lastPreviewNumber = previewNumber - imageNumber * previewPerImage;
+            const row = Math.floor(lastPreviewNumber / this._previewsPerImageRow);
+            const column = lastPreviewNumber - row * this._previewsPerImageColumn;
+
+            this._hoverPreview.style.backgroundPositionX = `calc(var(--preview-width) * -${column})`;
+            this._hoverPreview.style.backgroundPositionY = `calc(var(--preview-height) * -${row})`;
+        }
+
+        // Seek Episode name
+        if (this._hoverCaption.style.marginLeft !== '0px' || this._hoverCaption.style.marginRight !== '0px') {
+            this._hoverCaption.style.marginLeft = 0;
+            this._hoverCaption.style.marginRight = 0;
+        }
+
+        const currentHoverEpisode = this._getCurrentHoverEpisode(e);
+        this._hoverCaption.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
+        const marginToggle = (this._hoverCaption.clientWidth - this._hoverPreview.offsetWidth) / 2;
+        if (marginLeft <= marginToggle) {
+            // left
+            this._hoverCaption.style.marginLeft = 0;
+            const margin = this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth ? - this._hoverCaption.clientWidth / 2 : 0;
+            this._hoverCaption.style.marginRight = margin + 'px';
+        } else if (marginLeft >= this._progressBar.clientWidth - this._hoverPreview.offsetWidth - marginToggle) {
+            // rigth
+            const margin = this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth ? this._hoverPreview.offsetWidth - this._hoverCaption.clientWidth : 0;
+            this._hoverCaption.style.marginLeft = margin + 'px';
+            this._hoverCaption.style.marginRight = 0;
+        } else {
+            // center
+            if (this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth) {
+                this._hoverCaption.style.marginLeft = - marginToggle + 'px';
+                this._hoverCaption.style.marginRight = - marginToggle + 'px';
+            }
+        }
+
+        // Seek Time
+        this._hoverTime.textContent = HTMLBvVideoPlayer._dur2str(time);
+    }
+
+    /**
+     * @param {Event} e
+     * @returns {HTMLLIElement} 
+     */
+    _getCurrentHoverEpisode(e) {
+        for (let i = 0; i < this._episodesContainer.children.length; i++) {
+            /**
+             * @type {HTMLLIElement} 
+             */
+            const episode = this._episodesContainer.children[i];
+            const bounding = episode.getBoundingClientRect();
+
+            let left = bounding.left;
+            if (i > 0) {
+                /**
+                 * @type {HTMLLIElement}
+                 */
+                const previousEpisode = this._episodesContainer.children[i - 1];
+                left = previousEpisode.getBoundingClientRect().right;
+            }
+
+            if (e.pageX >= left && e.pageX < bounding.right) {
+                return episode;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @typedef  {object} EpisodeSubItems
+     * @property {HTMLDivElement} padding
+     * @property {HTMLUListElement} list
+     * @property {HTMLDivElement} hover
+     * @property {HTMLDivElement} load
+     * @property {HTMLDivElement} play
+     */
+
+    /**
+     * @param {HTMLLIElement} episode
+     * @returns {EpisodeSubItems}  
+     */
+    static _getEpisodeSubItems(episode) {
+        return {
+            padding: episode.querySelector('.episode-padding'),
+            list: episode.querySelector('.episode-list'),
+            hover: episode.querySelector('.episode-hover'),
+            load: episode.querySelector('.episode-load'),
+            play: episode.querySelector('.episode-play'),
+        }
+    }
+
     //#region Create Functions
 
     /**
@@ -808,11 +1040,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * Контейнер всплывающего контейнера с превью и временем.
          * @type {HTMLDivElement}
          */
-        this._hoverContainer = document.createElement('div');
-        this._hoverContainer.classList.add('hover-container');
-        this._hoverContainer.style.marginLeft = '50px';
-        this._hoverContainer.style.marginRight = 'auto';
-        panelWrapper.appendChild(this._hoverContainer);
+        this._seekContainer = document.createElement('div');
+        this._seekContainer.classList.add('seek-container');
+        this._seekContainer.style.marginLeft = '50px';
+        this._seekContainer.style.marginRight = 'auto';
+        panelWrapper.appendChild(this._seekContainer);
 
         /**
          * Миниатюра.
@@ -820,7 +1052,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._hoverPreview = document.createElement('div');
         this._hoverPreview.classList.add('progress-hover-preview');
-        this._hoverContainer.appendChild(this._hoverPreview);
+        this._seekContainer.appendChild(this._hoverPreview);
 
         /**
          * Название эпизода.
@@ -828,7 +1060,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._hoverCaption = document.createElement('div');
         this._hoverCaption.classList.add('progress-hover-caption');
-        this._hoverContainer.appendChild(this._hoverCaption);
+        this._seekContainer.appendChild(this._hoverCaption);
 
         /**
          * Время.
@@ -836,7 +1068,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._hoverTime = document.createElement('div');
         this._hoverTime.classList.add('progress-hover-time');
-        this._hoverContainer.appendChild(this._hoverTime);
+        this._seekContainer.appendChild(this._hoverTime);
 
         //#endregion --- Create Preview, Episode name & Time
 
@@ -848,219 +1080,32 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._progressBar = document.createElement('div');
         this._progressBar.classList.add('progress-bar');
-
-        /**
-         * @param {number} time
-         */
-        const setProgressPlayPosition = time => {
-            const percent = time / this._video.duration;
-
-            let leftPc = 0;
-            for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                /**
-                 * @type {HTMLLIElement}
-                 */
-                const episode = this._episodesContainer.children[i];
-                const subItems = getEpisodeSubItems(episode);
-
-                const pcPerEpisode = episode.clientWidth / this._progressBar.clientWidth;
-
-                if (percent < leftPc) {
-                    subItems.play.style.width = '0';
-                } else if (percent < leftPc + pcPerEpisode) {
-                    const episodePc = (percent - leftPc) / pcPerEpisode;
-                    subItems.play.style.width = episodePc * 100 + '%';
-                } else {
-                    subItems.play.style.width = '100%';
-                }
-
-                leftPc += pcPerEpisode;
-            }
-
-            // Scrubber
-            this._progressScrubber.style.left = percent * 100 + '%';
-        }
-
-        /**
-         * @param {number} time
-         * @param {Event} e
-         */
-        const setProgressHoverPosition = (time, e) => {
-            const percent = time / this._video.duration;
-
-            let leftPc = 0;
-            for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                /**
-                 * @type {HTMLLIElement}
-                 */
-                const episode = this._episodesContainer.children[i];
-                const subItems = getEpisodeSubItems(episode);
-
-                const pcPerEpisode = episode.clientWidth / e.currentTarget.clientWidth;
-
-                if (percent < leftPc) {
-                    subItems.hover.style.width = '0';
-                } else if (percent < leftPc + pcPerEpisode) {
-                    const episodePc = (percent - leftPc) / pcPerEpisode;
-                    subItems.hover.style.width = episodePc * 100 + '%';
-                } else {
-                    subItems.hover.style.width = '100%';
-                }
-
-                leftPc += pcPerEpisode;
-            }
-
-            // Hover Container Preview
-            const offsetX = e.clientX - e.currentTarget.getBoundingClientRect().left;
-            const hoverPos = offsetX / e.currentTarget.clientWidth;
-            const hoverTime = this._video.duration * hoverPos;
-            let absOffsetX = Math.max(0, offsetX - this._hoverContainer.clientWidth / 2);
-            absOffsetX = Math.min(absOffsetX, e.currentTarget.clientWidth - this._hoverContainer.clientWidth);
-            this._hoverContainer.style.marginLeft = absOffsetX + 'px';
-            this._hoverContainer.style.opacity = 1;
-            // Hover Preview
-            const previewNumber = Math.floor(hoverTime / this._previewStep);
-            if (this._hoverPreview.currentPreview !== previewNumber) {
-                this._hoverPreview.currentPreview = previewNumber;
-
-                const previewPerImage = this._previewsPerImageColumn * this._previewsPerImageRow;
-                const imageNumber = Math.floor(previewNumber / previewPerImage);
-
-                if (this._hoverPreview.currentPreviewImage !== imageNumber) {
-                    this._hoverPreview.currentPreviewImage = imageNumber;
-
-                    // Change image with previews
-                    const imageUrl = this._previewsHref.replace('{0}', imageNumber);
-                    this._hoverPreview.style.backgroundImage = `url("${imageUrl}")`;
-
-                    // Hide if preview failed load
-                    const checkImg = document.createElement('img');
-                    checkImg.addEventListener('load', e => {
-                        this._hoverPreview.style.visibility = 'visible';
-                    });
-                    checkImg.addEventListener('error', e => {
-                        this._hoverPreview.style.visibility = 'collapse';
-                    });
-                    checkImg.src = imageUrl;
-                }
-
-                const lastPreviewNumber = previewNumber - imageNumber * previewPerImage;
-                const row = Math.floor(lastPreviewNumber / this._previewsPerImageRow);
-                const column = lastPreviewNumber - row * this._previewsPerImageColumn;
-
-                this._hoverPreview.style.backgroundPositionX = `calc(var(--preview-width) * -${column})`;
-                this._hoverPreview.style.backgroundPositionY = `calc(var(--preview-height) * -${row})`;
-            }
-            // Hover Episode name
-            const captionMargin = 90; // px
-            if (offsetX <= this._hoverContainer.clientWidth / 2 + captionMargin / 2) {
-                // left
-                this._hoverCaption.style.marginLeft = '0px';
-                this._hoverCaption.style.marginRight = - captionMargin + 'px';
-            } else if (offsetX >= e.currentTarget.clientWidth - this._hoverContainer.clientWidth + captionMargin / 2) {
-                // right
-                this._hoverCaption.style.marginLeft = - captionMargin + 'px';
-                this._hoverCaption.style.marginRight = '0px';
-            } else {
-                // center
-                this._hoverCaption.style.marginLeft = - captionMargin / 2 + 'px';
-                this._hoverCaption.style.marginRight = - captionMargin / 2 + 'px';
-            }
-
-            const currentHoverEpisode = getCurrentHoverEpisode(e);
-            this._hoverCaption.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
-            // Hover Time
-            this._hoverTime.textContent = HTMLBvVideoPlayer._dur2str(hoverTime);
-        }
-
-        /**
-         * @param {Event} e
-         * @returns {number}
-         */
-        const getHoverTime = e => {
-            const offsetX = e.clientX - e.currentTarget.getBoundingClientRect().left;
-            const hoverPos = offsetX / e.currentTarget.clientWidth;
-            const hoverTime = this._video.duration * hoverPos;
-            return hoverTime;
-        }
-
         this._progressBar.addEventListener('mousedown', e => {
             if (e.button === 0) { // Main
                 this._isMouseDown = true;
                 this._video.pause();
-
-                const hoverTime = getHoverTime(e);
-                setProgressPlayPosition(hoverTime);
+                const hoverTime = this._getTimeByPageX(e.pageX);
+                this._setProgressPlayPosition(hoverTime);
             }
-        });
-        this._progressBar.addEventListener('mouseup', e => {
-            if (e.button === 0) { // Main
-                this._isMouseDown = false;
-
-                //const hoverTime = getHoverTime(e);
-                //setProgressPlayPosition(hoverTime);
-                //this._video.currentTime = hoverTime;
-            }
-        });
-        this._progressBar.addEventListener('mousemove', e => {
-            if (this._isMouseDown) {
-                const hoverTime = getHoverTime(e);
-                setProgressPlayPosition(hoverTime);
-                //setProgressHoverPosition(0, e);
-            }
-
-            const currentHoverEpisode = getCurrentHoverEpisode(e);
-            //if (currentHoverEpisode !== null) {
-                for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                    /**
-                     * @type {HTMLLIElement}
-                     */
-                    const episode = this._episodesContainer.children[i];
-                    const subItems = getEpisodeSubItems(episode);
-                    if (episode === currentHoverEpisode) {
-                        // Scale Episode
-                        subItems.list.classList.add('episode-hover-active');
-                        // Scrubber
-                        this._progressScrubber.classList.remove('progress-scrubber-episode-hover');
-                        this._progressScrubber.classList.add('progress-scrubber-hover');
-                        // Padding
-                        subItems.padding.classList.add('progress-padding-hover');
-                    } else {
-                        // Scale Episode
-                        subItems.list.classList.remove('episode-hover-active');
-                        subItems.list.classList.add('episode-hover');
-                        // Scrubber
-                        this._progressScrubber.classList.remove('progress-scrubber-hover');
-                        this._progressScrubber.classList.add('progress-scrubber-episode-hover');
-                        // Padding
-                        subItems.padding.classList.remove('progress-padding-hover');
-                    }
-                }
-            //} 
         });
         this._progressBar.addEventListener('mouseleave', e => {
-
-            if (this._isMouseDown) {
-
-                return;
-            }
-
             // Episodes
             for (let i = 0; i < this._episodesContainer.children.length; i++) {
                 /**
                  * @type{HTMLLIElement}
                  */
                 const episode = this._episodesContainer.children[i];
-                const subItems = getEpisodeSubItems(episode);
+                const subItems = HTMLBvVideoPlayer._getEpisodeSubItems(episode);
                 // Hover
                 subItems.hover.style.width = '0';
-                // Scale Episode
-                subItems.list.classList.remove('episode-hover-active', 'episode-hover');
+                // Scale & Padding Episode
+                //episode.classList.remove('episode-hover-active', 'episode-hover-current', 'episode-padding-hover');
             }
+
             // Hover Container Preview, Time & Episode Name
-            this._hoverContainer.style.opacity = 0;
+            //this._hoverContainer.style.opacity = 0;
             // Scrubber
-            this._progressScrubber.classList.remove('progress-scrubber-hover', 'progress-scrubber-episode-hover');
+            //this._progressScrubber.classList.remove('progress-scrubber-hover', 'progress-scrubber-episode-hover');
         });
         panelWrapper.appendChild(this._progressBar);
 
@@ -1079,49 +1124,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._progressScrubber = document.createElement('div');
         this._progressScrubber.classList.add('progress-scrubber');
         this._progressBar.appendChild(this._progressScrubber);
-
-        // ---------------------
-
-        /**
-         * @param {Event} e
-         * @returns {HTMLLIElement} 
-         */
-        const getCurrentHoverEpisode = e => {
-            for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                /**
-                 * @type {HTMLLIElement} 
-                 */
-                const episode = this._episodesContainer.children[i];
-                if (e.pageX >= episode.offsetLeft &&
-                    e.pageX < episode.offsetLeft + episode.clientWidth) {
-                    return episode;
-                }
-            }
-            return null;
-        }
-
-        /**
-         * @typedef  {object} EpisodeSubItems
-         * @property {HTMLDivElement} padding
-         * @property {HTMLUListElement} list
-         * @property {HTMLDivElement} hover
-         * @property {HTMLDivElement} load
-         * @property {HTMLDivElement} play
-         */
-
-        /**
-         * @param {HTMLLIElement} episode
-         * @returns {EpisodeSubItems}  
-         */
-        const getEpisodeSubItems = episode => {
-            return {
-                padding: episode.querySelector('.progress-padding'),
-                list: episode.querySelector('.progress-list'),
-                hover: episode.querySelector('.progress-hover'),
-                load: episode.querySelector('.progress-load'),
-                play: episode.querySelector('.progress-play'),
-            }
-        }
 
         //#endregion --- Create Progress Bar
 
@@ -1352,7 +1354,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._video.textContent = `Тег video не поддерживается вашим браузером. Обновите браузер.`;
         this._video.addEventListener('timeupdate', e => {
             this._updateTime();
-            setProgressPlayPosition(this._video.currentTime);
+            //setProgressPlayPosition(this._video.currentTime);
         });
         this._video.addEventListener('play', () => {
             this._updatePlayButtonState();
@@ -1466,7 +1468,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._spinnerHide();
 
             // Append Episode
-            this.removeAllEpisodes();
             this.appendEpisodes([
                 {
                     title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit vivamus sit amet',
@@ -1613,52 +1614,59 @@ class HTMLBvVideoPlayer extends HTMLElement {
     //#endregion Create Functions
 
     /**
-     * Удалить все эпизоды.
-     */
-    removeAllEpisodes() {
-        while (this._episodesContainer.children.length > 0) {
-            this._episodesContainer.children[0].remove();
-        }
-    }
-
-    /**
      * Добавляет новый эпизод.
      * @param {EpisodeData=} episodeData
      */
-    appendEpisode(episodeData) {
-        if (typeof episodeData === 'undefined') {
-            console.error('Не заданы данные епизодов.');
-            return;
-        }
-
+    _appendEpisode(episodeData) {
         const item = document.createElement('li');
-        if (typeof episodeData.title !== 'undefined' && episodeData.title !== null && episodeData.title.length > 0) {
+
+        // Title
+        if (typeof episodeData !== 'undefined' &&
+            typeof episodeData.title === 'string' &&
+            episodeData.title !== null &&
+            episodeData.title.length > 0) {
             item.setAttribute('data-title', episodeData.title);
         }
-        item.style.width = (episodeData.duration / this._video.duration) * 100 + '%';
 
+        // Duration
+        let duration = this._video.duration;
+        if (typeof episodeData !== 'undefined' &&
+            typeof episodeData.duration === 'number' &&
+            episodeData.duration !== null && 
+            episodeData.duration >= 0) {
+            if (episodeData.duration < 0) {
+                console.error('Duration out of range');
+            } else {
+                duration = episodeData.duration;
+            }
+        } 
+        item.style.width = (duration / this._video.duration) * 100 + '%';
+
+        // Wrapper
+        const episodeWrapper = document.createElement('div');
+        episodeWrapper.classList.add('episode-wrapper');
+        item.appendChild(episodeWrapper);
+
+        // Sub Items
         const list = document.createElement('ul');
-        list.classList.add('progress-list');
-        item.appendChild(list);
+        list.classList.add('episode-list');
+        episodeWrapper.appendChild(list);
 
         const load = document.createElement('li');
-        load.classList.add('progress-load');
-        //load.style.width = '25%';
+        load.classList.add('episode-load');
         list.appendChild(load);
 
         const hover = document.createElement('li');
-        hover.classList.add('progress-hover');
-        //hover.style.width = '50%';
+        hover.classList.add('episode-hover');
         list.appendChild(hover);
 
         const play = document.createElement('li');
-        play.classList.add('progress-play');
-        //play.style.width = '12.5%';
+        play.classList.add('episode-play');
         list.appendChild(play);
 
         const padding = document.createElement('div');
-        padding.classList.add('progress-padding');
-        item.appendChild(padding);
+        padding.classList.add('episode-padding');
+        episodeWrapper.appendChild(padding);
 
         this._episodesContainer.appendChild(item);
     }
@@ -1668,10 +1676,20 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @param {Array<EpisodeData>} episodesData
      */
     appendEpisodes(episodesData) {
-        for (let i = 0; i < episodesData.length; i++) {
-            const episodeData = episodesData[i];
+        // remove
+        while (this._episodesContainer.children.length > 0) {
+            this._episodesContainer.children[0].remove();
+        }
 
-            this.appendEpisode(episodeData);
+        // append
+        if (typeof episodesData === 'undefined' || episodesData === null) {
+            this._appendEpisode();
+        } else {
+            for (let i = 0; i < episodesData.length; i++) {
+                const episodeData = episodesData[i];
+
+                this._appendEpisode(episodeData);
+            }
         }
     }
 

@@ -55,16 +55,22 @@
        * @type {HTMLBvVideoPlayer} 
        */
       const player = document.querySelector('bv-video-player');
+      const episodes = [];
 
       document.querySelector('#episodeClear').addEventListener('click', e => {
-        player.removeAllEpisodes();
+        player.appendEpisodes();
+        episodes.length = 0;
       });
 
       document.querySelector('#episodeAdd').addEventListener('click', e => {
-        player.appendEpisode({
+        const episode = {
           title: document.querySelector('#episodeTitle').value,
           duration: (document.querySelector('#episodeDuration').value / 100) * player._video.duration,
-        });
+        };
+
+        episodes.push(episode);
+
+        player.appendEpisodes(episodes);
       });
 
     </script>
