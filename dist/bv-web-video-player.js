@@ -333,6 +333,17 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         episode.classList.remove('episode-hover-current');
                     }
                 }
+                // Scrubber
+                const pos = this._progressBar.offsetWidth * (this._video.currentTime / this._video.duration);
+                if (pos >= currentHoverEpisode.offsetLeft &&
+                    pos < currentHoverEpisode.offsetLeft + currentHoverEpisode.offsetWidth && 
+                    this._episodesContainer.children.length > 1) {
+                    this._progressScrubber.classList.remove('progress-scrubber-hover');
+                    this._progressScrubber.classList.add('progress-scrubber-episode-hover');
+                } else {
+                    this._progressScrubber.classList.remove('progress-scrubber-episode-hover');
+                    this._progressScrubber.classList.add('progress-scrubber-hover');
+                }
             }
 
             const hoverTime = this._getTimeByPageX(e.pageX);
@@ -365,6 +376,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         }
                         // Seek
                         this._seekContainer.style.opacity = 0;
+                        // Scrubber
+                        this._progressScrubber.classList.remove('progress-scrubber-hover', 'progress-scrubber-episode-hover');
                     }
                 }
             }
