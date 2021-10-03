@@ -154,11 +154,6 @@ ul.episodes-container {
     height: 16px;
 }
 
-.episode-padding-hover > .episode-wrapper > .episode-padding {
-    height: 40px;
-    margin-bottom: -12px;
-}
-
 .episode-list {
     list-style-type: none;
     padding: 0;
@@ -189,14 +184,19 @@ li.episode-hover {
     background-color: var(--progress-hover-color);
 }
 
-.episode-hover-active > .episode-wrapper > .episode-list {
+.progress-hover .episode-list {
     margin-top: -1px;
     height: 5px;
 }
 
-.episode-hover-current > .episode-wrapper > .episode-list {
-    margin-top: -3px;
+.episode-hover-current .episode-list {
     height: 9px;
+    margin-top: -3px;
+}
+
+.episode-hover-current .episode-padding {
+    height: 40px;
+    margin-bottom: -12px;
 }
 
 /* PROGRESS SCRUBBER */

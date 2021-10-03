@@ -318,22 +318,19 @@ class HTMLBvVideoPlayer extends HTMLElement {
         });
         window.addEventListener('mousemove', e => {
             const updateScaling = () => {
+                // Progress Hover
+                this._progressBar.classList.add('progress-hover');
+                // Set Scale
                 const currentHoverEpisode = this._getCurrentHoverEpisode(e.pageX);
                 for (let i = 0; i < this._episodesContainer.children.length; i++) {
                     /**
                      * @type {HTMLLIElement}
                      */
                     const episode = this._episodesContainer.children[i];
-                    if (episode === currentHoverEpisode) {
-                        // Scale Episode & Padding
-                        episode.classList.remove('episode-hover-active');
-                        episode.classList.add('episode-padding-hover');
-                        episode.classList.add(this._episodesContainer.children.length > 1
-                            ? 'episode-hover-current' : 'episode-hover-active');
+                    if (episode === currentHoverEpisode && this._episodesContainer.children.length > 1) {
+                        episode.classList.add('episode-hover-current');
                     } else {
-                        // Scale Episode & Padding
-                        episode.classList.remove('episode-hover-current', 'episode-padding-hover');
-                        episode.classList.add('episode-hover-active');
+                        episode.classList.remove('episode-hover-current');
                     }
                 }
             }
@@ -353,14 +350,17 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         // Scale
                         updateScaling();
                     } else {
-                        // Reset Scale
+                        // Reset Progress Hover
+                        this._progressBar.classList.remove('progress-hover');
+                        // Reset Episode
                         for (let i = 0; i < this._episodesContainer.children.length; i++) {
                             /**
                              * @type {HTMLLIElement}
                              */
                             const episode = this._episodesContainer.children[i];
+                            episode.classList.remove('episode-hover-current');
+                            // Hover
                             const subItems = HTMLBvVideoPlayer._getEpisodeSubItems(episode);
-                            episode.classList.remove('episode-hover-active', 'episode-hover-current', 'episode-padding-hover');
                             subItems.hover.style.width = 0;
                         }
                         // Seek
