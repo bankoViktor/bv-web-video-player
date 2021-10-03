@@ -6,6 +6,8 @@
     <style type="text/css">
       body {
         height: 4000px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        user-select: none;
       }
       .block-for-video {
         height: 480px;
@@ -15,6 +17,25 @@
         font-weight: bolder;
         font-size: 0.7rem;
       }
+
+      .group {
+        border: 1px solid black;
+        border-radius: 2px;
+        padding: 20px;
+        margin-top: 20px;
+        position: relative;
+      }
+
+      .group::before {
+        position: absolute;
+        left: 15px;
+        top: 0;
+        transform: translateY(-60%);
+        content: attr(data-title);
+        background-color: white;
+        padding: 2px 4px;
+      }
+
     </style>
   </head>
   <body>
@@ -37,16 +58,12 @@
       </bv-video-player>
     </div>
 
-    <div style="margin-top:20px;">
-      <input type="text" />
+    <div class="group" data-title="Episodes:">
+      <button id="episodeClear">Clear Episodes</button>
+      Название <input id="episodeTitle" type="text" value="Episode" style="width: 400px;" />
+      Длительность, % <input id="episodeDuration" type="number" min="0" max="100" value="50" />
+      <button id="episodeAdd">Add Episode </button>
     </div>
-
-    <div id="out" style="margin-top:20px;">out</div>
-
-    <button id="episodeClear">Episodes Clear</button>
-    Название <input id="episodeTitle" type="text" value="Episode"/>
-    Длительность, % <input id="episodeDuration" type="number" min="0" max="100" value="50"/>
-    <button id="episodeAdd">Episode Add</button>
 
     <script src="dist/bv-web-video-player.js"></script>
     <script>

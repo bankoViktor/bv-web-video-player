@@ -23,9 +23,6 @@
  */
 
 
-
-
-
 /**
  * @typedef  {object} ChangedEventOptions
  * @property {'added'|'modified'|'removed'} action
@@ -194,6 +191,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._previewsHref = 'example-previews/preview_{0}.png';
 
         /**
+         * Флаг положения главной кнопки мыши в нажатом состоянии..
+         * @type {boolean}
+         */
+        this._isMouseDown = false;
+
+        /**
          * Флаг инициализации компонента.
          * @type {boolean} 
          */
@@ -305,14 +308,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 e.preventDefault();
             }
         });
-        //window.addEventListener('mousedown', e => {
-        //    if (this._isMouseDown && e.button === 0) { // Main
-        //        this._isMouseDown = false;
-        //    }
-        //});
         window.addEventListener('mouseup', e => {
             if (this._isMouseDown && e.button === 0) { // Main
                 this._isMouseDown = false;
+
+                const time = this._getTimeByPageX(e.pageX);
+                this._video.currentTime = time;
             }
         });
         window.addEventListener('mousemove', e => {
@@ -326,7 +327,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     if (episode === currentHoverEpisode) {
                         // Scale Episode & Padding
                         episode.classList.remove('episode-hover-active');
-                        episode.classList.add('episode-hover-current', 'episode-padding-hover');
+                        episode.classList.add('episode-padding-hover');
+                        episode.classList.add(this._episodesContainer.children.length > 1
+                            ? 'episode-hover-current' : 'episode-hover-active');
                     } else {
                         // Scale Episode & Padding
                         episode.classList.remove('episode-hover-current', 'episode-padding-hover');
@@ -1358,7 +1361,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._video.textContent = `Тег video не поддерживается вашим браузером. Обновите браузер.`;
         this._video.addEventListener('timeupdate', e => {
             this._updateTime();
-            //setProgressPlayPosition(this._video.currentTime);
+            this._setProgressPlayPosition(this._video.currentTime);
         });
         this._video.addEventListener('play', () => {
             this._updatePlayButtonState();
@@ -1402,6 +1405,17 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._video.addEventListener('loadeddata', e => { // 4. loadeddata 
             //this._logger.log('loaded data');
             this._playButton.disabled = false;
+            // Append Episode
+            this.appendEpisodes([
+                {
+                    title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit vivamus sit amet',
+                    duration: 0.3 * this._video.duration,
+                },
+                {
+                    title: 'Suspendisse laoreet',
+                    duration: 0.7 * this._video.duration,
+                }
+            ]);
         });
         this._video.addEventListener('progress', e => { // 5. progress
             /**
@@ -1470,18 +1484,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._video.addEventListener('canplay', e => { // 6. canplay
             //this._logger.log('can play');
             this._spinnerHide();
-
-            // Append Episode
-            this.appendEpisodes([
-                {
-                    title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit vivamus sit amet',
-                    duration: 0.3 * this._video.duration,
-                },
-                {
-                    title: 'Suspendisse tincidunt laoreet ex consectetur adipiscing elit',
-                    duration: 0.7 * this._video.duration,
-                }
-            ]);
         });
         this._video.addEventListener('canplaythrough', e => { // 7. canplaythrough 
             //this._logger.log('can play through');
