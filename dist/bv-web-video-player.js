@@ -197,6 +197,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._isMouseDown = false;
 
         /**
+         * Флаг необходимости возобновления воспроизведения (при переходе к другому премени).
+         * @type {number} 
+         */
+        this._keepPlay = false;
+
+        /**
          * Флаг инициализации компонента.
          * @type {boolean} 
          */
@@ -1207,6 +1213,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 await this._video.play();
             } else {
                 await this._video.pause();
+                this._keepPlay = false;
             }
         });
         leftPanel.appendChild(this._playButton);
