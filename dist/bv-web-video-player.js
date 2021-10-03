@@ -1165,11 +1165,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._playButton = document.createElement('button');
         this._playButton.disabled = true;
-        this._playButton.addEventListener('click', e => {
+        this._playButton.addEventListener('click', async e => {
             if (this._video.paused) {
-                this._video.play();
+                await this._video.play();
             } else {
-                this._video.pause();
+                await this._video.pause();
             }
         });
         leftPanel.appendChild(this._playButton);
@@ -1451,10 +1451,17 @@ class HTMLBvVideoPlayer extends HTMLElement {
             // }
 
             // Спиннер при загрузке видео
-            if (sender.readyState === sender.HAVE_CURRENT_DATA) {
-                this._spinnerShow();
-            } else if (sender.readyState === sender.HAVE_FUTURE_DATA) {
-                this._spinnerHide();
+
+            switch (sender.networkState) {
+
+                case sender.NETWORK_LOADING:
+                    this._spinnerShow();
+                    break;
+
+                case sender.NETWORK_IDLE:
+                    this._spinnerHide();
+                    break;
+            }
             }
 
             //let networkState;
