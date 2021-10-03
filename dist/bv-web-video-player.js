@@ -326,11 +326,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
             window.pageX = e.pageX;
             window.pageY = e.pageY;
 
-            if (this._isMouseDown && !this._video.paused) {
-                this._keepPlay = true;
-                await this._video.pause();
-            }
-
             const updateScaling = () => {
                 const currentHoverEpisode = this._getCurrentHoverEpisode(e.pageX);
                 // Progress Hover
@@ -1152,14 +1147,21 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._progressBar = document.createElement('div');
         this._progressBar.classList.add('progress-bar');
-        this._progressBar.addEventListener('mousedown', e => {
+        this._progressBar.addEventListener('mousedown', async e => {
             if (e.button === 0) { // Main
                 this._isMouseDown = true;
+
+                if (this._isMouseDown && !this._video.paused) {
+                    this._keepPlay = true;
+                    await this._video.pause();
+                }
 
                 const hoverTime = this._getTimeByPageX(e.pageX);
                 if (hoverTime != null) {
                     this._setProgressPlayPosition(hoverTime);
                 }
+
+                this._updateScrubber();
             }
         });
         panelWrapper.appendChild(this._progressBar);
@@ -1410,8 +1412,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._video.textContent = `Тег video не поддерживается вашим браузером. Обновите браузер.`;
         this._video.addEventListener('timeupdate', e => {
             this._updateTime();
-            this._setProgressPlayPosition(this._video.currentTime);
-            this._updateScrubber();
+
+            if (!this._isMouseDown) {
+                this._setProgressPlayPosition(this._video.currentTime);
+                this._updateScrubber();
+            }
         });
         this._video.addEventListener('play', () => {
             this._updatePlayButtonState();
