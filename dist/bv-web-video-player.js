@@ -312,11 +312,25 @@ class HTMLBvVideoPlayer extends HTMLElement {
             if (this._isMouseDown && e.button === 0) { // Main
                 this._isMouseDown = false;
 
+                this._updateScrubber();
+
                 const time = this._getTimeByPageX(e.pageX);
                 this._video.currentTime = time;
+
+                if (this._keepPlay) {
+                    this._video.play();
+                }
             }
         });
-        window.addEventListener('mousemove', e => {
+        window.addEventListener('mousemove', async e => {
+            window.pageX = e.pageX;
+            window.pageY = e.pageY;
+
+            if (this._isMouseDown && !this._video.paused) {
+                this._keepPlay = true;
+                await this._video.pause();
+            }
+
             const updateScaling = () => {
                 const currentHoverEpisode = this._getCurrentHoverEpisode(e.pageX);
                 // Progress Hover
@@ -335,12 +349,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 }
 
                 // Scrubber
-                if (this._progressScrubber.offsetLeft >= currentHoverEpisode.offsetLeft &&
-                    this._progressScrubber.offsetLeft <= currentHoverEpisode.offsetLeft + currentHoverEpisode.offsetWidth) {
-                    this._progressScrubber.classList.add('progress-scrubber-episode');
-                } else {
-                    this._progressScrubber.classList.remove('progress-scrubber-episode');
-                }
+                this._updateScrubber();
             }
 
             const hoverTime = this._getTimeByPageX(e.pageX);
@@ -482,6 +491,36 @@ class HTMLBvVideoPlayer extends HTMLElement {
         //#endregion This Events
 
         this._logger.log('constructor');
+    }
+
+    _updateScrubber() {
+        /**
+         * Проверяет попадания точки в прямоугольник.
+         * @param {DOMRect} rect Прямоугольная область.
+         * @param {DOMPoint} point Точка.
+         * @returns {boolean}
+         */
+        const isPointInRect = function (rect, point) {
+            const byX = point.x >= rect.left && point.x <= rect.right;
+            const byY = point.y >= rect.top && point.y <= rect.bottom;
+            return byX && byY;
+        }
+
+        if (this._episodesContainer.children.length > 1) {
+            if (typeof window.pageX !== 'undefined' && window.pageX !== null && window.pageX >= 0) {
+                const episode = this._getCurrentHoverEpisode(window.pageX);
+                const bounding = episode.querySelector('.episode-padding').getBoundingClientRect();
+                const scrubberBounding = this._progressScrubber.getBoundingClientRect();
+                const point = new DOMPoint(scrubberBounding.left + scrubberBounding.width / 2, window.pageY);
+                if (isPointInRect(bounding, point)) {
+                    this._progressScrubber.classList.add('progress-scrubber-episode');
+                } else {
+                    this._progressScrubber.classList.remove('progress-scrubber-episode');
+                }
+            }
+        } else {
+            this._progressScrubber.classList.remove('progress-scrubber-episode');
+        }
     }
 
     static get observedAttributes() {
@@ -1372,6 +1411,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._video.addEventListener('timeupdate', e => {
             this._updateTime();
             this._setProgressPlayPosition(this._video.currentTime);
+            this._updateScrubber();
         });
         this._video.addEventListener('play', () => {
             this._updatePlayButtonState();
@@ -1428,6 +1468,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
             ]);
         });
         this._video.addEventListener('progress', e => { // 5. progress
+            this._updateScrubber();
+
             /**
              * @type {HTMLVideoElement}
              */
