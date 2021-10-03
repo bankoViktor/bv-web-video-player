@@ -202,25 +202,24 @@ li.episode-hover {
 /* PROGRESS SCRUBBER */
 
 .progress-scrubber {
-    width: 0;
-    height: 0;
+    --scale-ratio: 0;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     position: absolute;
     top: 50%;
     left: 0;
-    transform: translateX(-50%) translateY(-50%);
+    transform: translateX(-50%) translateY(-50%) scale(var(--scale-ratio));
     background-color: var(--progress-play-color);
-    transition: width 50ms linear, height 50ms linear;
+    transition: transform 150ms linear;
 }
 
-.progress-scrubber-hover {
-    width: 12px;
-    height: 12px;
+.progress-scrubber-episode {
+    --scale-ratio: 160% !important;
 }
 
-.progress-scrubber-episode-hover {
-    width: 20px;
-    height: 20px;
+.progress-hover .progress-scrubber {
+    --scale-ratio: 100%;
 }
 
 /* CONTROLS */
