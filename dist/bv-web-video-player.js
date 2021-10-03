@@ -1371,6 +1371,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @type {HTMLVideoElement} 
          */
         this._video = document.createElement('video');
+        this._video.setAttribute('type', 'video/mp4');
         this._video.textContent = `Тег video не поддерживается вашим браузером. Обновите браузер.`;
         this._video.addEventListener('timeupdate', e => {
             this._updateTime();
