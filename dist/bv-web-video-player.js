@@ -45,6 +45,37 @@
 
 const isDebug = true;
 
+/**
+ * Преобразовывает длительность в формате 'HH:MM:SS' в число.
+ * @param {string} str
+ * @returns {number}
+ */
+function str2dur(str) {
+    let parts = str.split(":", 3).reverse();
+    let result = 0;
+    let m = [1, 60, 3600];
+    for (let i = 0; i < parts.length; i++) {
+        result += parseInt(parts[i]) * m[i];
+    }
+    return result;
+}
+
+/**
+ * Преобразовывает длительность в строку формата 'HH:MM:SS'.
+ * @param {number} duration
+ * @returns {string}
+ */
+function dur2str(duration) {
+    let m = Math.trunc(duration / 60);
+    let h = Math.trunc(m / 60);
+    let s = Math.trunc(duration - (h * 60 + m) * 60);
+    let result = m + ":" + (s < 10 ? "0" + s : s);
+    if (m >= 60) {
+        result = h + ":" + result;
+    }
+    return result;
+}
+
 
 
 class BvLogger {
@@ -663,37 +694,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     /**
-     * Преобразовывает длительность в формате 'HH:MM:SS' в число.
-     * @param {string} str
-     * @returns {number}
-     */
-    static _str2dur(str) {
-        let parts = str.split(":", 3).reverse();
-        let result = 0;
-        let m = [1, 60, 3600];
-        for (let i = 0; i < parts.length; i++) {
-            result += parseInt(parts[i]) * m[i];
-        }
-        return result;
-    }
-
-    /**
-     * Преобразовывает длительность в строку формата 'HH:MM:SS'.
-     * @param {number} duration
-     * @returns {string}
-     */
-    static _dur2str(duration) {
-        let m = Math.trunc(duration / 60);
-        let h = Math.trunc(m / 60);
-        let s = Math.trunc(duration - (h * 60 + m) * 60);
-        let result = m + ":" + (s < 10 ? "0" + s : s);
-        if (m >= 60) {
-            result = h + ":" + result;
-        }
-        return result;
-    }
-
-    /**
      * Устанавливает скорость воспроизведения из набора по индексу.
      * @param {HTMLVideoElement} video Элемент проигрывателя.
      * @param {number} speedIndex Индекс скорости воспроизведния из набора.
@@ -755,8 +755,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._timeIndicator.style.visibility = 'collapse';
         } else {
             this._timeIndicator.style.visibility = 'visible';
-            const curStr = HTMLBvVideoPlayer._dur2str(cur);
-            const durStr = HTMLBvVideoPlayer._dur2str(dur);
+            const curStr = dur2str(cur);
+            const durStr = dur2str(dur);
             this._timeIndicator.textContent = `${curStr} / ${durStr}`;
         }
     }
@@ -980,7 +980,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         }
 
         // Seek Time
-        this._hoverTime.textContent = HTMLBvVideoPlayer._dur2str(time);
+        this._hoverTime.textContent = dur2str(time);
     }
 
     /**
