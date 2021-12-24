@@ -24,9 +24,14 @@
 
 
 /**
- * @typedef  {object} ChangedEventOptions
+ * @typedef  {object} QualityChangedEventOptions
  * @property {'added'|'modified'|'removed'} action
  * @property {HTMLBvQuality} element
+ * 
+ * 
+ * @typedef  {object} EpisodeChangedEventOptions
+ * @property {'added'|'modified'|'removed'} action
+ * @property {HTMLBvEpisode} element
  * 
  * 
  * @typedef  {object} EpisodeData
@@ -455,13 +460,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this.style.cursor = '';
             }
         });
-
-        // Quality
         this.addEventListener('qualitylist-changed', e => {
             this._logger.log('QualityList changed');
 
             /**
-             * @type {ChangedEventOptions} 
+             * @type {QualityChangedEventOptions}
              */
             const options = e.detail;
             switch (options.action) {
@@ -485,40 +488,35 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
             }
         });
+        this.addEventListener('--episodelist-changed', e => {
+            this._logger.log('EpisodeList changed');
 
-        // Episode
-        //this.addEventListener('episodelist-add', e => {
-        //    this._logger.log('EpisodeList add');
+            if (isNaN(this._video.duration))
+                return;
 
-        //    /**
-        //     * Коллекция эпизодов.
-        //     * @type {HTMLBvEpisodeList} 
-        //     */
-        //    this._episodeList = e.detail;
-        //});
-        //this.addEventListener('episodelist-remove', e => {
-        //    logger.log('VideoPlayer :: EpisodeList remove');
+            /**
+             * @type {EpisodeChangedEventOptions} 
+             */
+            const options = e.detail;
+            switch (options.action) {
 
-        //    this._episodeList = null;
-        //});
-        //this.addEventListener('episode-add', e => {
-        //    logger.log('VideoPlayer :: episode add');
+                case 'added':
+                    this._appendEpisode({
+                        duration: options.element.duration,
+                        title: options.element.title,
+                    })
+                    break;
 
-        //    /**
-        //     * Коллекция вариация качества.
-        //     * @type {HTMLBvEpisode} 
-        //     */
-        //    const episode = e.detail;
-        //});
-        //this.addEventListener('episode-remove', e => {
-        //    logger.log('VideoPlayer :: episode remove');
+                case 'removed':
 
-        //    /**
-        //     * Коллекция вариация качества.
-        //     * @type {HTMLBvEpisode} 
-        //     */
-        //    const episode = e.detail;
-        //});
+                    break;
+
+                case 'modified':
+
+                    break;
+
+            }
+        });
 
         //#endregion This Events
 
@@ -1454,7 +1452,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             }
         });
         this._video.addEventListener('loadstart', e => { // 1. loadstart
-            //this._logger.log('load start');
+            this._logger.log('load start');
             this._spinnerShow();
         });
         this._video.addEventListener('durationchange', () => { // 2. durationchange
@@ -1462,22 +1460,30 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._updateTime();
         });
         this._video.addEventListener('loadedmetadata', e => { // 3. loadedmetadata 
-            //this._logger.log('loaded meta data');
+            this._logger.log('loaded meta data');
         });
         this._video.addEventListener('loadeddata', e => { // 4. loadeddata 
-            //this._logger.log('loaded data');
+            this._logger.log('loaded data');
             this._playButton.disabled = false;
+
             // Append Episode
-            this.appendEpisodes([
-                {
-                    title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit vivamus sit amet',
-                    duration: 0.3 * this._video.duration,
-                },
-                {
-                    title: 'Suspendisse laoreet',
-                    duration: 0.7 * this._video.duration,
-                }
-            ]);
+            /**
+             * @type {HTMLBvEpisodeList} 
+             */
+            //const episodeList = this.querySelector('bv-episode-list');
+            //if (episodeList !== null) {
+            //    this._removeEpisodes();
+            //    for (let i = 0; i < episodeList.children.length; i++) {
+            //        /**
+            //         * @type {HTMLBvEpisode} 
+            //         */
+            //        const episode = episodeList.children[i];
+            //        this._appendEpisode({
+            //            duration: episode.duration,
+            //            title: episode.title,
+            //        });
+            //    }
+            //}
         });
         this._video.addEventListener('progress', e => { // 5. progress
             this._updateScrubber();
@@ -1513,44 +1519,43 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     this._spinnerHide();
                     break;
             }
+
+            let networkState;
+            switch (sender.networkState) {
+                case 0:
+                    networkState = 'NETWORK_EMPTY';
+                    break;
+                case 1:
+                    networkState = 'NETWORK_IDLE';
+                    break;
+                case 2:
+                    networkState = 'NETWORK_LOADING';
+                    break;
+                case 3:
+                    networkState = 'NETWORK_NO_SOURCE';
+                    break;
             }
 
-            //let networkState;
-            //switch (sender.networkState) {
-            //    case 0:
-            //        networkState = 'NETWORK_EMPTY';
-            //        break;
-            //    case 1:
-            //        networkState = 'NETWORK_IDLE';
-            //        break;
-            //    case 2:
-            //        networkState = 'NETWORK_LOADING';
-            //        break;
-            //    case 3:
-            //        networkState = 'NETWORK_NO_SOURCE';
-            //        break;
-            //}
+            let readyState;
+            switch (sender.readyState) {
+                case 0:
+                    readyState = 'HAVE_NOTHING';
+                    break;
+                case 1:
+                    readyState = 'HAVE_METADATA';
+                    break;
+                case 2:
+                    readyState = 'HAVE_CURRENT_DATA';
+                    break;
+                case 3:
+                    readyState = 'HAVE_FUTURE_DATA';
+                    break;
+                case 4:
+                    readyState = 'HAVE_ENOUGH_DATA';
+                    break;
+            }
 
-            //let readyState;
-            //switch (sender.readyState) {
-            //    case 0:
-            //        readyState = 'HAVE_NOTHING';
-            //        break;
-            //    case 1:
-            //        readyState = 'HAVE_METADATA';
-            //        break;
-            //    case 2:
-            //        readyState = 'HAVE_CURRENT_DATA';
-            //        break;
-            //    case 3:
-            //        readyState = 'HAVE_FUTURE_DATA';
-            //        break;
-            //    case 4:
-            //        readyState = 'HAVE_ENOUGH_DATA';
-            //        break;
-            //}
-
-            //this._logger.log('progress: network ${networkState} / ready ${readyState}`);
+            this._logger.log(`progress: network ${networkState} / ready ${readyState}`);
         });
         this._video.addEventListener('canplay', e => { // 6. canplay
             //this._logger.log('can play');
@@ -1601,6 +1606,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
         root.appendChild(this._video);
 
         //#endregion Create Video
+
+        debugger
+
+        this._appendEpisode();
 
         //#region Create Load Spinner
 
@@ -1695,6 +1704,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @param {EpisodeData=} episodeData
      */
     _appendEpisode(episodeData) {
+        if (typeof episodeData !== 'undefined' && isNaN(this._video.duration)) {
+            console.error(`Duration is NaN.`);
+            return;
+        }
+
         const item = document.createElement('li');
 
         // Title
@@ -1746,6 +1760,15 @@ class HTMLBvVideoPlayer extends HTMLElement {
         episodeWrapper.appendChild(padding);
 
         this._episodesContainer.appendChild(item);
+    }
+
+    /**
+     * Удалить все эпизоды.
+     */
+    _removeEpisodes() {
+        while (this._episodesContainer.children.length > 0) {
+            this._episodesContainer.children[0].remove();
+        }
     }
 
     /**
@@ -1893,6 +1916,7 @@ class HTMLBvQualityList extends HTMLElement {
         this._logger.log('disconnected');
     }
 
+
 }
 window.customElements.define('bv-quality-list', HTMLBvQualityList);
 
@@ -2031,8 +2055,85 @@ class HTMLBvEpisodeList extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('EpisodeList', false);
+        this._logger = new BvLogger('EpisodeList', true);
 
+        //#region Events
+
+        this.addEventListener('episode-add', e => {
+            this._logger.log('episode add');
+
+            /**
+             * @type {HTMLBvEpisode} 
+             */
+            const newEpisode = e.detail;
+
+            // Notify Parent
+
+            /**
+             * @type {ChangedEventOptions} 
+             */
+            const options = {
+                action: 'added',
+                element: newEpisode,
+            };
+            const event = new CustomEvent('episodelist-changed', {
+                detail: options,
+                cancelable: false,
+                composed: true,
+                bubbles: false,
+            });
+            this.parentElement.dispatchEvent(event);
+        });
+        this.addEventListener('episode-remove', e => {
+            this._logger.log('episode remove');
+
+            /**
+             * @type {HTMLBvQuality} 
+             */
+            const removeEpisode = e.detail;
+
+            // Notify Parent
+
+            /**
+             * @type {ChangedEventOptions} 
+             */
+            const options = {
+                action: 'removed',
+                element: removeEpisode,
+            };
+            const event = new CustomEvent('episodelist-changed', {
+                detail: options,
+                cancelable: false,
+                composed: true,
+                bubbles: false,
+            });
+            this.parentElement.dispatchEvent(event);
+        });
+        this.addEventListener('episode-changed', e => {
+            this._logger.log('episode changed');
+
+            /**
+             * @type {HTMLBvQuality} 
+             */
+            const changedEpisode = e.detail;
+
+            /**
+             * @type {ChangedEventOptions} 
+             */
+            const options = {
+                action: 'modified',
+                element: changedEpisode,
+            };
+            const event = new CustomEvent('episodelist-changed', {
+                detail: options,
+                cancelable: false,
+                composed: true,
+                bubbles: false,
+            });
+            this.parentElement.dispatchEvent(event);
+        });
+
+        //#endregion Events
 
         this._logger.log('constructor');
     }
@@ -2041,18 +2142,25 @@ class HTMLBvEpisodeList extends HTMLElement {
         return [];
     }
 
+    get episodes() {
+        const episodes = [];
+        for (let i = 0; i < this.children.length; i++) {
+            /**
+             * @type {HTMLBvEpisode} 
+             */
+            const episode = this.children[i];
+            episodes.push({
+                duration: episode.duration,
+                title: episode.title,
+            });
+        }
+        return episodes;
+    }
+
     /**
      * Компонент добавляется в DOM.
      */
     connectedCallback() {
-        const collection = this._getParent();
-        if (collection !== null) {
-            const event = new CustomEvent('addepisodelist', {
-                detail: this,
-            })
-            collection.dispatchEvent(event);
-        }
-
         this._logger.log('connected');
     }
 
@@ -2060,31 +2168,32 @@ class HTMLBvEpisodeList extends HTMLElement {
      * Компонент удаляется из DOM.
      */
     disconnectedCallback() {
-        const collection = this._getParent();
-        if (collection !== null) {
-            const event = new CustomEvent('removeepisodelist', {
-                detail: this,
-            })
-            collection.dispatchEvent(event);
-        }
-
         this._logger.log('disconnected');
     }
 
     /**
-     * Ищет родителя-владельца.
-     * @returns {HTMLBvVideoPlayer}
+     * Удалить эпизод по его имени.
+     * @param {string} title
      */
-    _getParent() {
+    removeEpisode(title) {
+        for (let i = 0; i < this.children.length; i++) {
         /**
-        * @type {HTMLBvVideoPlayer} 
+             * @type {HTMLBvEpisode} 
         */
-        const player = this.parentElement;
-        if (player === null || player.nodeName !== 'BV-VIDEO-PLAYER') {
-            this._logger.error(`Тег 'bv-episode-list' должен находиться внутри элемента 'bv-video-player'.`);
-            return null;
+            const episode = this.children[i];
+            if (title === episode.title) {
+                episode.remove();
+                break;
         }
-        return player;
+        }
+    }
+
+    /**
+     * Добавить эпизод.
+     * @param {EpisodeData} episodeData
+     */
+    appendEpisode(episodeData) {
+
     }
 
 }
@@ -2101,7 +2210,7 @@ class HTMLBvEpisode extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('Episode', false);
+        this._logger = new BvLogger('Episode', true);
 
         /**
          * Длительность эпизода.
@@ -2114,6 +2223,11 @@ class HTMLBvEpisode extends HTMLElement {
          * @type {string} 
          */
         this._title = null;
+
+        /**
+         * @type {HTMLBvEpisodeList}
+         */
+        this._episodeList = null;
 
 
         this._logger.log('constructor');
@@ -2143,9 +2257,9 @@ class HTMLBvEpisode extends HTMLElement {
         switch (name) {
 
             case 'duration':
-                const val = parseInt(newValue);
-                if (!isNaN(val) || val < 0) {
-                    this._duration = newValue;
+                const duration = parseInt(newValue);
+                if (!isNaN(duration) || duration < 0) {
+                    this._duration = duration;
                 } else {
                     this._logger.error(`Invalid value 'duration' property.`);
                 }
@@ -2162,46 +2276,40 @@ class HTMLBvEpisode extends HTMLElement {
      * Компонент добавляется в DOM.
      */
     connectedCallback() {
-        const collection = this._getParent();
-        if (collection !== null) {
-            const event = new CustomEvent('addepisode', {
-                detail: this,
-            })
-            collection.dispatchEvent(event);
-        }
+        this._logger.log(`connected: duration = ${dur2str(this._duration)}, title = '${this._title}'`);
 
-        this._logger.log('connected');
+        if (this.parentElement === null || this.parentElement.nodeName !== 'BV-EPISODE-LIST') {
+            this._logger.error(`Тег 'bv-episode' должен находиться внутри элемента 'bv-episode-list'.`);
+        } else {
+            this._episodeList = this.parentElement;
+
+            this._notifyParent('episode-add');
+        }
     }
 
     /**
      * Компонент удаляется из DOM.
      */
     disconnectedCallback() {
-        const collection = this._getParent();
-        if (collection !== null) {
-            const event = new CustomEvent('removeepisode', {
-                detail: this,
-            })
-            collection.dispatchEvent(event);
-        }
-
+        this._notifyParent('episode-remove');
         this._logger.log('disconnected');
     }
 
     /**
-     * Ищет родителя-владельца.
-     * @returns {HTMLBvEpisodeList}
+     * Уведоляет родительский компонент.
+     * @param {string} eventName
      */
-    _getParent() {
-        /**
-        * @type {HTMLBvEpisodeList}
-        */
-        const episodeList = this.parentElement;
-        if (episodeList === null || episodeList.nodeName !== 'BV-EPISODE-LIST') {
-            this._logger.error(`Тег 'bv-episode' должен находиться внутри элемента 'bv-episode-list'.`);
-            return null;
+    _notifyParent(eventName) {
+        if (this._episodeList !== null) {
+            const event = new CustomEvent(eventName, {
+                detail: this,
+                cancelable: false,
+                composed: true,
+                bubbles: true,
+            })
+
+            this._episodeList.dispatchEvent(event);
         }
-        return episodeList;
     }
 
 }
