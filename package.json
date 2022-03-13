@@ -1,0 +1,30 @@
+{
+  "name": "bv-web-video-player",
+  "version": "0.4.3",
+  "description": "HTML5 Web Video Player",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bankoViktor/bv-web-video-player.git"
+  },
+  "author": {
+    "name": "Banko Viktor",
+    "email": "bankviktor14@gmail.com",
+    "url": "https://github.com/bankoViktor"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bankoViktor/bv-web-video-player/issues"
+  },
+  "homepage": "https://github.com/bankoViktor/bv-web-video-player#readme",
+  "scripts": {
+    "buid": "webpack --config webpack.config.js"
+  },
+  "devDependencies": {
+    "webpack": "^5.69.1",
+    "webpack-cli": "^4.9.2"
+  }
+}

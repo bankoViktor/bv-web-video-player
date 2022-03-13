@@ -1,114 +1,10 @@
-/*
- * HTML5 video wrapper.
- * 
- * Version:      0.4.3
- * Author:       Banko Viktor (bankviktor14@gmail.com)
- * Date:         01.09.2021
- *
- * Requirement: WebComponents support.
- * 
- * Hotkeys:
- *   [H] or [Left]                      Go 5 sec earlier.
- *   [J]                                Decrease playback speed.
- *   [K],[Space]                        Start/stop/normal speed playback.
- *   [L]                                Increase playback speed.
- *   [;] or [Right]                     Go 5 sec late.
- *   [I]                                Picture in picture mode.
- *   [F]                                Full screen mode.
- *   [M]                                Mute.
- *   [0]-[9] or [NumPad 0]-[NumPad 9]   Перейти на % видео
- *   [Up]                               Volume increase with 5 step.
- *   [Down]                             Volume decrease with 5 step.
- *
- */
+// HTMLBvVideoPlayer.js
 
-
-/**
- * @typedef  {object} QualityChangedEventOptions
- * @property {'added'|'modified'|'removed'} action
- * @property {HTMLBvQuality} element
- * 
- * 
- * @typedef  {object} EpisodeChangedEventOptions
- * @property {'added'|'modified'|'removed'} action
- * @property {HTMLBvEpisode} element
- * 
- * 
- * @typedef  {object} EpisodeData
- * @property {string} title
- * @property {number} duration
- * 
- * @typedef  {object} QualityItem
- * @property {string} value
- * @property {string} title
- * 
- * 
- * @typedef  {object} EpisodeItem
- * @property {number} duration
- * @property {string} title
- */
-
-const isDebug = true;
-
-/**
- * Преобразовывает длительность в формате 'HH:MM:SS' в число.
- * @param {string} str
- * @returns {number}
- */
-function str2dur(str) {
-    let parts = str.split(":", 3).reverse();
-    let result = 0;
-    let m = [1, 60, 3600];
-    for (let i = 0; i < parts.length; i++) {
-        result += parseInt(parts[i]) * m[i];
-    }
-    return result;
-}
-
-/**
- * Преобразовывает длительность в строку формата 'HH:MM:SS'.
- * @param {number} duration
- * @returns {string}
- */
-function dur2str(duration) {
-    let m = Math.trunc(duration / 60);
-    let h = Math.trunc(m / 60);
-    let s = Math.trunc(duration - (h * 60 + m) * 60);
-    let result = m + ":" + (s < 10 ? "0" + s : s);
-    if (m >= 60) {
-        result = h + ":" + result;
-    }
-    return result;
-}
-
-
-
-class BvLogger {
-    /**
-     * @param {string} name Название логгера.
-     * @param {boolean} isPrint Выводит сообщения в консоль. По-умолчанию: TRUE.
-     */
-    constructor(name, isPrint = true) {
-
-        /**
-         * Название логгера.
-         * @type {string} 
-         */
-        this.name = name;
-
-
-        if (isPrint) {
-            const format = [this.name, '::'];
-            this.log = console.log.bind(window.console, ...format);
-            //this.debug = console.log.bind(window.console, ...format);
-            //this.warm = console.warm.bind(window.console, format);
-            this.error = console.error.bind(window.console, ...format);
-        } else {
-            this.log = this.error = function () { };
-        }
-    }
-}
-
+const BV_VIDEO_PLAYER_TAG_NAME = 'bv-video-player';
+const BV_PLAYER_SOURCE_ATTRIBUTE_NAME = 'src';
+const BV_PLAYER_PARAM_ATTRIBUTE_NAME = 'param';
+const BV_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME = 'speed-control';
+const BV_PLAYER_HOTKEY_ATTRIBUTE_NAME = 'hotkey';
 
 
 class HTMLBvVideoPlayer extends HTMLElement {
@@ -120,7 +16,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('VideoPlayer', isDebug);
+        this._logger = new BvLogger('VideoPlayer', true);
 
         //#region Properties
 
@@ -234,7 +130,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         /**
          * Флаг необходимости возобновления воспроизведения (при переходе к другому премени).
-         * @type {number} 
+         * @type {boolean} 
          */
         this._keepPlay = false;
 
@@ -333,7 +229,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
             }
 
             // Go to % positoon
-            if (e.keyCode >= KeyEvent.DOM_VK_0 && e.keyCode <= KeyEvent.DOM_VK_9 || e.keyCode >= KeyEvent.DOM_VK_NUMPAD0 && e.keyCode <= KeyEvent.DOM_VK_NUMPAD9) {
+            if (e.keyCode >= KeyEvent.DOM_VK_0 && e.keyCode <= KeyEvent.DOM_VK_9 ||
+                e.keyCode >= KeyEvent.DOM_VK_NUMPAD0 && e.keyCode <= KeyEvent.DOM_VK_NUMPAD9) {
                 const base = e.keyCode < 96 ? 48 : 96;
                 const m = (e.keyCode - base) / 10;
                 this._video.currentTime = this._video.duration * m;
@@ -374,9 +271,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._progressBar.classList.add('progress-hover');
                 // Set Scale
                 for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                    /**
-                     * @type {HTMLLIElement}
-                     */
+                    /** @type {HTMLLIElement} */
+                    // @ts-ignore
                     const episode = this._episodesContainer.children[i];
                     if (episode === currentHoverEpisode && this._episodesContainer.children.length > 1) {
                         episode.classList.add('episode-hover-current');
@@ -408,14 +304,13 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         this._progressBar.classList.remove('progress-hover');
                         // Reset Episode
                         for (let i = 0; i < this._episodesContainer.children.length; i++) {
-                            /**
-                             * @type {HTMLLIElement}
-                             */
+                            /** @type {HTMLLIElement} */
+                            // @ts-ignore
                             const episode = this._episodesContainer.children[i];
                             episode.classList.remove('episode-hover-current');
                             // Hover
                             const subItems = HTMLBvVideoPlayer._getEpisodeSubItems(episode);
-                            subItems.hover.style.width = 0;
+                            subItems.hoverEl.style.width = 0;
                         }
                         // Seek
                         this._seekContainer.style.opacity = 0;
@@ -502,8 +397,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
                 case 'added':
                     this._appendEpisode({
-                        duration: options.element.duration,
-                        title: options.element.title,
+                        duration: options.episodeEl.duration,
+                        title: options.episodeEl.title,
                     })
                     break;
 
@@ -523,6 +418,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._logger.log('constructor');
     }
 
+    /**
+     * @returns {void}
+     */
     _updateScrubber() {
         /**
          * Проверяет попадания точки в прямоугольник.
@@ -554,26 +452,32 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['src', 'param', 'speed-controls', 'hotkey'];
+        return [
+            BV_PLAYER_SOURCE_ATTRIBUTE_NAME,
+            BV_PLAYER_PARAM_ATTRIBUTE_NAME,
+            BV_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME,
+            BV_PLAYER_HOTKEY_ATTRIBUTE_NAME,
+        ];
     }
 
     get source() { return this._src; }
-    set source(v) { this.setAttribute('src', v); }
+    set source(v) { this.setAttribute(BV_PLAYER_SOURCE_ATTRIBUTE_NAME, v); }
 
     get param() { return this._param; }
-    set param(v) { this.setAttribute('param', v); }
+    set param(v) { this.setAttribute(BV_PLAYER_PARAM_ATTRIBUTE_NAME, v); }
 
     get speedControls() { return this._speedControls; }
-    set speedControls(v) { this.setAttribute('speed-controls', v); }
+    set speedControls(v) { this.setAttribute(BV_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME, v.toString()); }
 
     get hotkey() { return this._hotkey; }
-    set hotkey(v) { this.setAttribute('hotkey', v); }
+    set hotkey(v) { this.setAttribute(BV_PLAYER_HOTKEY_ATTRIBUTE_NAME, v.toString()); }
 
     /**
      * Компоненту добавляют, удаляют или изменяют атрибут.
      * @param {string} name
      * @param {string} oldValue
      * @param {string} newValue
+     * @returns {void}
      */
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue === newValue)
@@ -585,22 +489,22 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         switch (name) {
 
-            case 'src':
+            case BV_PLAYER_SOURCE_ATTRIBUTE_NAME:
                 this._src = newValue;
                 break;
 
-            case 'param':
+            case BV_PLAYER_PARAM_ATTRIBUTE_NAME:
                 this._param = newValue;
                 break;
 
-            case 'speed-controls':
+            case BV_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME:
                 this._speedControls = newValue.toLowerCase() !== 'false';
                 if (this._isInitialized) {
                     this._updateSpeedControls();
                 }
                 break;
 
-            case 'hotkey':
+            case BV_PLAYER_HOTKEY_ATTRIBUTE_NAME:
                 this._hotkey = newValue.toLowerCase() !== 'false';
                 if (this._isInitialized) {
                     this._updateControls();
@@ -611,6 +515,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Компонент добавляется в DOM.
+     * @returns {void}
      */
     connectedCallback() {
         if (!this._isInitialized) {
@@ -621,8 +526,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._logger.log('connected');
     }
 
-    /**
+    /** 
      * Компонент удаляется из DOM.
+     * @returns {void}
      */
     disconnectedCallback() {
         clearInterval(this._moveTimerId);
@@ -631,19 +537,26 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._logger.log('disconnected');
     }
 
-    /**
+    /** 
      * Показывает спиннер загрузки.
+     * @returns {void}
      */
-    _spinnerShow() { this._spinnerWrapper.style.visibility = 'visible'; }
+    _spinnerShow() {
+        this._spinnerWrapper.style.visibility = 'visible';
+    }
 
-    /**
-     * Скрывает спиннер загрузки. 
+    /** 
+     * Скрывает спиннер загрузки.
+     * @returns {void}
      */
-    _spinnerHide() { this._spinnerWrapper.style.visibility = 'collapse'; }
+    _spinnerHide() {
+        this._spinnerWrapper.style.visibility = 'collapse';
+    }
 
     /**
      * Скрыть/показать меню.
-     * @param {boolean}
+     * @param {boolean} isShow
+     * @returns {void}
      */
     _showMenu(isShow = true) {
         this._popupMenu.style.visibility = isShow ? 'visible' : 'collapse';
@@ -652,7 +565,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Возвращает название горячей клавиши.
-     * @type {HTMLElement} element
+     * @param {HTMLElement} element
+     * @returns {string}
      */
     _hotkeyPrint(element) {
         if (!this._hotkey) {
@@ -695,6 +609,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * Устанавливает скорость воспроизведения из набора по индексу.
      * @param {HTMLVideoElement} video Элемент проигрывателя.
      * @param {number} speedIndex Индекс скорости воспроизведния из набора.
+     * @returns {void}
      */
     _setSpeed(video, speedIndex) {
         this._playSpeedCur = speedIndex;
@@ -703,7 +618,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Устанавливает громкость.
-     * @param {Event} e события
+     * @param {Event} e
+     * @returns {void}
      */
     _setVolume(e) {
         let x = e.offsetX;
@@ -732,7 +648,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
     //#region Update Functions
 
     /**
-     * Обновление состояния элементов управления. 
+     * Обновление состояния элементов управления.
+     * @returns {void}
      */
     _updateControls() {
         this._updatePlayButtonState();
@@ -743,7 +660,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     /**
-     * Обновляет индикатор времени. 
+     * Обновляет индикатор времени.
+     * @returns {void}
      */
     _updateTime() {
         const cur = this._video.currentTime;
@@ -760,12 +678,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     /**
-     * Обновить состояние пунктов меню. 
+     * Обновить состояние пунктов меню.
+     * @returns {void}
      */
     _updateMenu() {
-        /**
-         * @type {Array<HTMLDivElement>} 
-         */
+        /** @type {Array<HTMLDivElement>} */
+        // @ts-ignore
         const items = Array.from(this._menuItemList.children);
         items.forEach((element, _i, _ar) => {
             const isSelected = this._curParValue === element.getAttribute('data-value');
@@ -775,6 +693,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Устанавливает состояние кнопки воспроизведение/стоп.
+     * @returns {void}
      */
     _updatePlayButtonState() {
         this._playButton.title = (this._video.paused ? 'Смотреть' : 'Пауза') + this._hotkeyPrint(this._playButton);
@@ -785,6 +704,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Устанавливает состояние кнопки громкости.
+     * @returns {void}
      */
     _updateVolumeButtonState() {
         const vol = this._video.volume;
@@ -800,6 +720,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
     /**
      * Устанавливает состояние кнопки картинтка-в-картинке.
      * @param {boolean} isActive
+     * @returns {void}
      */
     _updatePipButtonState(isActive = false) {
         this._pipButton.title = (isActive ? 'Закрыть мини проигрыватель' : 'Открыть мини проигрыватель') + this._hotkeyPrint(this._pipButton);
@@ -810,6 +731,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Устанавливает состояние кнопок управления скоростью воспроизведения.
+     * @returns {void}
      */
     _updateSpeedControls() {
         // Slower
@@ -831,6 +753,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Устанавливает состояние кнопки полноэкранного режима.
+     * @returns {void}
      */
     _updateFullScreenButtonState() {
         this._fullscrButton.title = (document.fullscreen ? 'Выход из полноэкранного режима' : 'Во весь экран') + this._hotkeyPrint(this._fullscrButton);
@@ -847,7 +770,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     _getTimeByPageX(pageX) {
         const bounding = this._progressBar.getBoundingClientRect();
-        if (pageX >= bounding.left && pageX < bounding.right) {
+        if (pageX >= bounding.left &&
+            pageX < bounding.right) {
             const percent = (pageX - bounding.left) / bounding.width;
             return percent * this._video.duration;
         }
@@ -855,18 +779,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     /**
-     * 
      * @param {'play'|'hover'} subItem
      * @param {any} time
+     * @returns {void}
      */
     _setProgressSubItemsPosition(subItem, time) {
         const progressBounding = this._progressBar.getBoundingClientRect();
         const progressLeft = progressBounding.left + time / this._video.duration * progressBounding.width;
 
         for (let i = 0; i < this._episodesContainer.children.length; i++) {
-            /**
-             * @type {HTMLLIElement}
-             */
+            /** @type {HTMLLIElement} */
             const episode = this._episodesContainer.children[i];
             const episodeSubItem = HTMLBvVideoPlayer._getEpisodeSubItems(episode)[subItem];
 
@@ -889,6 +811,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * @param {number} time
+     * @returns {void}
      */
     _setProgressPlayPosition(time) {
         this._setProgressSubItemsPosition('play', time);
@@ -900,6 +823,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
     /**
      * @param {number} time
      * @param {number} pageX
+     * @returns {void}
      */
     _setProgressSeekPosition(time, pageX) {
         // Seek Container
@@ -983,13 +907,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * @param {number} pageX
-     * @returns {HTMLLIElement} 
+     * @returns {HTMLLIElement}
      */
     _getCurrentHoverEpisode(pageX) {
         for (let i = 0; i < this._episodesContainer.children.length; i++) {
-            /**
-             * @type {HTMLLIElement} 
-             */
+            /** @type {HTMLLIElement} */
             const episode = this._episodesContainer.children[i];
             const bounding = episode.getBoundingClientRect();
 
@@ -1010,25 +932,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     /**
-     * @typedef  {object} EpisodeSubItems
-     * @property {HTMLDivElement} padding
-     * @property {HTMLUListElement} list
-     * @property {HTMLDivElement} hover
-     * @property {HTMLDivElement} load
-     * @property {HTMLDivElement} play
-     */
-
-    /**
      * @param {HTMLLIElement} episode
-     * @returns {EpisodeSubItems}  
+     * @returns {EpisodeSubItems}
      */
     static _getEpisodeSubItems(episode) {
         return {
-            padding: episode.querySelector('.episode-padding'),
-            list: episode.querySelector('.episode-list'),
-            hover: episode.querySelector('.episode-hover'),
-            load: episode.querySelector('.episode-load'),
-            play: episode.querySelector('.episode-play'),
+            paddingEl: episode.querySelector('.episode-padding'),
+            listEl: episode.querySelector('.episode-list'),
+            hoverEl: episode.querySelector('.episode-hover'),
+            loadEl: episode.querySelector('.episode-load'),
+            playEl: episode.querySelector('.episode-play'),
         }
     }
 
@@ -1036,6 +949,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Инициализация компонента.
+     * @returns {void}
      */
     _initialization() {
         this._moveTimerId = setInterval(() => {
@@ -1431,9 +1345,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
         });
         this._video.addEventListener('volumechange', e => {
             this._updateVolumeButtonState();
-            /**
-            * @type {HTMLVideoElement}
-            */
+            /** @type {HTMLVideoElement} */
+            // @ts-ignore
             const sender = e.currentTarget;
             this._volumeSliderFill.style.width = sender.volume * 100 + '%';
         });
@@ -1488,9 +1401,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._video.addEventListener('progress', e => { // 5. progress
             this._updateScrubber();
 
-            /**
-             * @type {HTMLVideoElement}
-             */
+            /** @type {HTMLVideoElement} */
+            // @ts-ignore
             const sender = e.currentTarget;
             // const buff = sender.buffered;
             // this._buffersSegsList.innerHTML = '';
@@ -1565,9 +1477,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
             //this._logger.log('can play through');
         });
         this._video.addEventListener('error', e => {
-            /**
-             * @type {HTMLVideoElement}
-             */
+            /** @type {HTMLVideoElement} */
+            // @ts-ignore
             const sender = e.currentTarget;
 
             this._spinnerHide();
@@ -1624,11 +1535,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._spinnerWrapper.classList.add('spinner');
 
         const circle = document.createElementNS(svgNS, 'circle');
-        circle.setAttribute('cx', 25);
-        circle.setAttribute('cy', 25);
-        circle.setAttribute('r', 20);
+        circle.setAttribute('cx', '25');
+        circle.setAttribute('cy', '25');
+        circle.setAttribute('r', '20');
         circle.setAttribute('fill', 'none');
-        circle.setAttribute('stroke-width', 5);
+        circle.setAttribute('stroke-width', '5');
         this._spinnerWrapper.appendChild(circle);
 
         root.appendChild(this._spinnerWrapper);
@@ -1664,14 +1575,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
         li.addEventListener('click', e => {
             this._showMenu(false);
 
-            /**
-             * @type {HTMLLIElement} 
-             */
+            /** @type {HTMLLIElement} */
+            // @ts-ignore
             const sender = e.currentTarget;
 
-            /**
-             * @type {string}
-             */
+            /** @type {string} */
             const value = sender.getAttribute('data-value');
 
             if (this._curParValue === value) {
@@ -1701,7 +1609,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Добавляет новый эпизод.
-     * @param {EpisodeData=} episodeData
+     * @param {EpisodeInfo=} episodeData
+     * @returns {void}
      */
     _appendEpisode(episodeData) {
         if (typeof episodeData !== 'undefined' && isNaN(this._video.duration)) {
@@ -1764,6 +1673,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Удалить все эпизоды.
+     * @returns {void}
      */
     _removeEpisodes() {
         while (this._episodesContainer.children.length > 0) {
@@ -1773,20 +1683,21 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /**
      * Добавляет новые эпизоды.
-     * @param {Array<EpisodeData>} episodesData
+     * @param {EpisodeInfo[]} episodeInfos
+     * @returns {void}
      */
-    appendEpisodes(episodesData) {
+    appendEpisodes(episodeInfos) {
         // remove
         while (this._episodesContainer.children.length > 0) {
             this._episodesContainer.children[0].remove();
         }
 
         // append
-        if (typeof episodesData === 'undefined' || episodesData === null) {
+        if (typeof episodeInfos === 'undefined' || episodeInfos === null) {
             this._appendEpisode();
         } else {
-            for (let i = 0; i < episodesData.length; i++) {
-                const episodeData = episodesData[i];
+            for (let i = 0; i < episodeInfos.length; i++) {
+                const episodeData = episodeInfos[i];
 
                 this._appendEpisode(episodeData);
             }
@@ -1794,646 +1705,5 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
 };
-window.customElements.define('bv-video-player', HTMLBvVideoPlayer);
 
-
-
-class HTMLBvQualityList extends HTMLElement {
-
-    constructor() {
-        super();
-
-        /**
-         * Логгер класса.
-         * @type {BvLogger} 
-         */
-        this._logger = new BvLogger('QualityList', false);
-
-
-        //#region This Events Handlers
-
-        this.addEventListener('quality-add', e => {
-            this._logger.log('quality add');
-
-            /**
-             * @type {HTMLBvQuality} 
-             */
-            const newQuality = e.detail;
-
-            // Check same value
-            for (let i = 0; i < this.children.length; i++) {
-                /**
-                 * @type {HTMLBvQuality} 
-                 */
-                const quality = this.children[i];
-                if (quality !== newQuality && quality.value === newQuality.value) {
-                    newQuality.invalid = true;
-                }
-            }
-
-            // Notify Parent
-
-            /**
-             * @type {ChangedEventOptions} 
-             */
-            const options = {
-                action: 'added',
-                element: newQuality,
-            };
-            const event = new CustomEvent('qualitylist-changed', {
-                detail: options,
-                cancelable: false,
-                composed: true,
-                bubbles: false,
-            });
-            this.parentElement.dispatchEvent(event);
-        });
-        this.addEventListener('quality-remove', e => {
-            this._logger.log('quality remove');
-
-            /**
-             * @type {HTMLBvQuality} 
-             */
-            const removeQuality = e.detail;
-
-            // Notify Parent
-
-            /**
-             * @type {ChangedEventOptions} 
-             */
-            const options = {
-                action: 'removed',
-                element: removeQuality,
-            };
-            const event = new CustomEvent('qualitylist-changed', {
-                detail: options,
-                cancelable: false,
-                composed: true,
-                bubbles: false,
-            });
-            this.parentElement.dispatchEvent(event);
-        });
-        this.addEventListener('quality-changed', e => {
-            this._logger.log('quality changed');
-
-            /**
-             * @type {HTMLBvQuality} 
-             */
-            const changedQuality = e.detail;
-
-            /**
-             * @type {ChangedEventOptions} 
-             */
-            const options = {
-                action: 'modified',
-                element: changedQuality,
-            };
-            const event = new CustomEvent('qualitylist-changed', {
-                detail: options,
-                cancelable: false,
-                composed: true,
-                bubbles: false,
-            });
-            this.parentElement.dispatchEvent(event);
-        });
-
-        //#endregion This Events Handlers
-
-        this._logger.log('constructor');
-    }
-
-    /**
-    * Компонент добавляется в DOM.
-    */
-    connectedCallback() {
-        this._logger.log('connected');
-    }
-
-    /**
-     * Компонент удаляется из DOM.
-     */
-    disconnectedCallback() {
-        this._logger.log('disconnected');
-    }
-
-
-}
-window.customElements.define('bv-quality-list', HTMLBvQualityList);
-
-
-
-class HTMLBvQuality extends HTMLElement {
-
-    constructor() {
-        super();
-
-        /**
-         * Логгер класса.
-         * @type {BvLogger} 
-         */
-        this._logger = new BvLogger('Quality', false);
-
-        /**
-         * Коллекция-владелец.
-         * @type {HTMLBvQualityList} 
-         */
-        this._qualityList = null;
-
-        /**
-         * Значение, которое будет добавляться к URI запроса как параметр.
-         * @type {string} 
-         */
-        this._value = null;
-
-        /**
-         * Элемени не валидный и не используется.
-         * @type {boolean} 
-         */
-        this._invalid = false;
-
-
-        this._logger.log('constructor');
-    }
-
-    static get observedAttributes() {
-        return ['value', 'invalid'];
-    }
-
-    get value() { return this._value; }
-    set value(v) { this.setAttribute('value', v); }
-
-    get invalid() { return this._invalid; }
-    set invalid(v) { this.setAttribute('invalid', v); }
-
-    /**
-     * Компоненту добавляют, удаляют или изменяют атрибут.
-     * @param {string} name
-     * @param {string} oldValue
-     * @param {string} newValue
-     */
-    attributeChangedCallback(name, oldValue, newValue) {
-
-        if (oldValue === newValue)
-            return;
-
-        if (newValue === null) {
-            newValue = 'false';
-        }
-
-        switch (name) {
-
-            case 'value':
-                if (newValue.toString().length === 0) {
-                    this._logger.error('NULL not valid value.');
-                } else {
-                    this._value = newValue;
-                }
-                this._notifyParent('quality-changed');
-                break;
-
-            case 'invalid':
-                this._invalid = newValue.toLowerCase() !== 'false';
-                if (this._invalid === false) {
-                    this._notifyParent('quality-add');
-                }
-                break;
-        }
-    }
-
-    /**
-     * Компонент добавляется в DOM.
-     */
-    connectedCallback() {
-        this._logger.log(`connected: value = ${this._value}`);
-
-        if (this.parentElement === null || this.parentElement.nodeName !== 'BV-QUALITY-LIST') {
-            this._logger.error(`Тег 'bv-quality' должен находиться внутри элемента 'bv-quality-list'.`);
-        } else {
-            this._qualityList = this.parentElement;
-
-            this._notifyParent('quality-add');
-        }
-    }
-
-    /**
-     * Компонент удаляется из DOM.
-     */
-    disconnectedCallback() {
-        this._logger.log(`disconnected: value = ${this._value}`);
-
-        this._notifyParent('quality-remove');
-    }
-
-    /**
-     * Уведоляет родительский компонент.
-     * @param {string} eventName
-     */
-    _notifyParent(eventName) {
-        if (this._qualityList !== null) {
-            const event = new CustomEvent(eventName, {
-                detail: this,
-                cancelable: false,
-                composed: true,
-                bubbles: true,
-            })
-
-            this._qualityList.dispatchEvent(event);
-        }
-    }
-
-};
-window.customElements.define('bv-quality', HTMLBvQuality);
-
-
-
-class HTMLBvEpisodeList extends HTMLElement {
-
-    constructor() {
-        super();
-
-        /**
-         * Логгер класса.
-         * @type {BvLogger} 
-         */
-        this._logger = new BvLogger('EpisodeList', true);
-
-        //#region Events
-
-        this.addEventListener('episode-add', e => {
-            this._logger.log('episode add');
-
-            /**
-             * @type {HTMLBvEpisode} 
-             */
-            const newEpisode = e.detail;
-
-            // Notify Parent
-
-            /**
-             * @type {ChangedEventOptions} 
-             */
-            const options = {
-                action: 'added',
-                element: newEpisode,
-            };
-            const event = new CustomEvent('episodelist-changed', {
-                detail: options,
-                cancelable: false,
-                composed: true,
-                bubbles: false,
-            });
-            this.parentElement.dispatchEvent(event);
-        });
-        this.addEventListener('episode-remove', e => {
-            this._logger.log('episode remove');
-
-            /**
-             * @type {HTMLBvQuality} 
-             */
-            const removeEpisode = e.detail;
-
-            // Notify Parent
-
-            /**
-             * @type {ChangedEventOptions} 
-             */
-            const options = {
-                action: 'removed',
-                element: removeEpisode,
-            };
-            const event = new CustomEvent('episodelist-changed', {
-                detail: options,
-                cancelable: false,
-                composed: true,
-                bubbles: false,
-            });
-            this.parentElement.dispatchEvent(event);
-        });
-        this.addEventListener('episode-changed', e => {
-            this._logger.log('episode changed');
-
-            /**
-             * @type {HTMLBvQuality} 
-             */
-            const changedEpisode = e.detail;
-
-            /**
-             * @type {ChangedEventOptions} 
-             */
-            const options = {
-                action: 'modified',
-                element: changedEpisode,
-            };
-            const event = new CustomEvent('episodelist-changed', {
-                detail: options,
-                cancelable: false,
-                composed: true,
-                bubbles: false,
-            });
-            this.parentElement.dispatchEvent(event);
-        });
-
-        //#endregion Events
-
-        this._logger.log('constructor');
-    }
-
-    static get observedAttributes() {
-        return [];
-    }
-
-    get episodes() {
-        const episodes = [];
-        for (let i = 0; i < this.children.length; i++) {
-            /**
-             * @type {HTMLBvEpisode} 
-             */
-            const episode = this.children[i];
-            episodes.push({
-                duration: episode.duration,
-                title: episode.title,
-            });
-        }
-        return episodes;
-    }
-
-    /**
-     * Компонент добавляется в DOM.
-     */
-    connectedCallback() {
-        this._logger.log('connected');
-    }
-
-    /**
-     * Компонент удаляется из DOM.
-     */
-    disconnectedCallback() {
-        this._logger.log('disconnected');
-    }
-
-    /**
-     * Удалить эпизод по его имени.
-     * @param {string} title
-     */
-    removeEpisode(title) {
-        for (let i = 0; i < this.children.length; i++) {
-        /**
-             * @type {HTMLBvEpisode} 
-        */
-            const episode = this.children[i];
-            if (title === episode.title) {
-                episode.remove();
-                break;
-        }
-        }
-    }
-
-    /**
-     * Добавить эпизод.
-     * @param {EpisodeData} episodeData
-     */
-    appendEpisode(episodeData) {
-
-    }
-
-}
-window.customElements.define('bv-episode-list', HTMLBvEpisodeList);
-
-
-
-class HTMLBvEpisode extends HTMLElement {
-
-    constructor() {
-        super();
-
-        /**
-         * Логгер класса.
-         * @type {BvLogger} 
-         */
-        this._logger = new BvLogger('Episode', true);
-
-        /**
-         * Длительность эпизода.
-         * @type {number} 
-         */
-        this._duration = null;
-
-        /**
-         * Название эпизода.
-         * @type {string} 
-         */
-        this._title = null;
-
-        /**
-         * @type {HTMLBvEpisodeList}
-         */
-        this._episodeList = null;
-
-
-        this._logger.log('constructor');
-    }
-
-    static get observedAttributes() {
-        return ['duration', 'title'];
-    }
-
-    get duration() { return this._duration; }
-    set duration(v) { this.setAttribute('duration', v); }
-
-    get title() { return this._title; }
-    set title(v) { this.setAttribute('title', v); }
-
-    /**
-     * Компоненту добавляют, удаляют или изменяют атрибут.
-     * @param {string} name
-     * @param {string} oldValue
-     * @param {string} newValue
-     */
-    attributeChangedCallback(name, oldValue, newValue) {
-
-        if (oldValue === newValue)
-            return;
-
-        switch (name) {
-
-            case 'duration':
-                const duration = parseInt(newValue);
-                if (!isNaN(duration) || duration < 0) {
-                    this._duration = duration;
-                } else {
-                    this._logger.error(`Invalid value 'duration' property.`);
-                }
-                break;
-
-            case 'title':
-                this._title = newValue;
-                break;
-
-        }
-    }
-
-    /**
-     * Компонент добавляется в DOM.
-     */
-    connectedCallback() {
-        this._logger.log(`connected: duration = ${dur2str(this._duration)}, title = '${this._title}'`);
-
-        if (this.parentElement === null || this.parentElement.nodeName !== 'BV-EPISODE-LIST') {
-            this._logger.error(`Тег 'bv-episode' должен находиться внутри элемента 'bv-episode-list'.`);
-        } else {
-            this._episodeList = this.parentElement;
-
-            this._notifyParent('episode-add');
-        }
-    }
-
-    /**
-     * Компонент удаляется из DOM.
-     */
-    disconnectedCallback() {
-        this._notifyParent('episode-remove');
-        this._logger.log('disconnected');
-    }
-
-    /**
-     * Уведоляет родительский компонент.
-     * @param {string} eventName
-     */
-    _notifyParent(eventName) {
-        if (this._episodeList !== null) {
-            const event = new CustomEvent(eventName, {
-                detail: this,
-                cancelable: false,
-                composed: true,
-                bubbles: true,
-            })
-
-            this._episodeList.dispatchEvent(event);
-        }
-    }
-
-}
-window.customElements.define('bv-episode', HTMLBvEpisode);
-
-
-
-// Keys
-if (typeof KeyEvent == "undefined") {
-    var KeyEvent = {
-        //DOM_VK_CANCEL: 3,
-        //DOM_VK_HELP: 6,
-        //DOM_VK_BACK_SPACE: 8,
-        //DOM_VK_TAB: 9,
-        //DOM_VK_CLEAR: 12,
-        //DOM_VK_RETURN: 13,
-        //DOM_VK_ENTER: 14,
-        //DOM_VK_SHIFT: 16,
-        //DOM_VK_CONTROL: 17,
-        //DOM_VK_ALT: 18,
-        //DOM_VK_PAUSE: 19,
-        //DOM_VK_CAPS_LOCK: 20,
-        //DOM_VK_ESCAPE: 27,
-        DOM_VK_SPACE: 32,
-        //DOM_VK_PAGE_UP: 33,
-        //DOM_VK_PAGE_DOWN: 34,
-        //DOM_VK_END: 35,
-        //DOM_VK_HOME: 36,
-        DOM_VK_LEFT: 37,
-        DOM_VK_UP: 38,
-        DOM_VK_RIGHT: 39,
-        DOM_VK_DOWN: 40,
-        //DOM_VK_PRINTSCREEN: 44,
-        //DOM_VK_INSERT: 45,
-        //DOM_VK_DELETE: 46,
-        DOM_VK_0: 48,
-        //DOM_VK_1: 49,
-        //DOM_VK_2: 50,
-        //DOM_VK_3: 51,
-        //DOM_VK_4: 52,
-        //DOM_VK_5: 53,
-        //DOM_VK_6: 54,
-        //DOM_VK_7: 55,
-        //DOM_VK_8: 56,
-        DOM_VK_9: 57,
-        //DOM_VK_EQUALS: 61,
-        //DOM_VK_A: 65,
-        //DOM_VK_B: 66,
-        //DOM_VK_C: 67,
-        //DOM_VK_D: 68,
-        //DOM_VK_E: 69,
-        DOM_VK_F: 70,
-        //DOM_VK_G: 71,
-        DOM_VK_H: 72,
-        DOM_VK_I: 73,
-        DOM_VK_J: 74,
-        DOM_VK_K: 75,
-        DOM_VK_L: 76,
-        DOM_VK_M: 77,
-        //DOM_VK_N: 78,
-        //DOM_VK_O: 79,
-        //DOM_VK_P: 80,
-        //DOM_VK_Q: 81,
-        //DOM_VK_R: 82,
-        //DOM_VK_S: 83,
-        //DOM_VK_T: 84,
-        //DOM_VK_U: 85,
-        //DOM_VK_V: 86,
-        //DOM_VK_W: 87,
-        //DOM_VK_X: 88,
-        //DOM_VK_Y: 89,
-        //DOM_VK_Z: 90,
-        //DOM_VK_CONTEXT_MENU: 93,
-        DOM_VK_NUMPAD0: 96,
-        //DOM_VK_NUMPAD1: 97,
-        //DOM_VK_NUMPAD2: 98,
-        //DOM_VK_NUMPAD3: 99,
-        //DOM_VK_NUMPAD4: 100,
-        //DOM_VK_NUMPAD5: 101,
-        //DOM_VK_NUMPAD6: 102,
-        //DOM_VK_NUMPAD7: 103,
-        //DOM_VK_NUMPAD8: 104,
-        DOM_VK_NUMPAD9: 105,
-        //DOM_VK_MULTIPLY: 106,
-        //DOM_VK_ADD: 107,
-        //DOM_VK_SEPARATOR: 108,
-        //DOM_VK_SUBTRACT: 109,
-        //DOM_VK_DECIMAL: 110,
-        //DOM_VK_DIVIDE: 111,
-        //DOM_VK_F1: 112,
-        //DOM_VK_F2: 113,
-        //DOM_VK_F3: 114,
-        //DOM_VK_F4: 115,
-        //DOM_VK_F5: 116,
-        //DOM_VK_F6: 117,
-        //DOM_VK_F7: 118,
-        //DOM_VK_F8: 119,
-        //DOM_VK_F9: 120,
-        //DOM_VK_F10: 121,
-        //DOM_VK_F11: 122,
-        //DOM_VK_F12: 123,
-        //DOM_VK_F13: 124,
-        //DOM_VK_F14: 125,
-        //DOM_VK_F15: 126,
-        //DOM_VK_F16: 127,
-        //DOM_VK_F17: 128,
-        //DOM_VK_F18: 129,
-        //DOM_VK_F19: 130,
-        //DOM_VK_F20: 131,
-        //DOM_VK_F21: 132,
-        //DOM_VK_F22: 133,
-        //DOM_VK_F23: 134,
-        //DOM_VK_F24: 135,
-        //DOM_VK_NUM_LOCK: 144,
-        //DOM_VK_SCROLL_LOCK: 145,
-        DOM_VK_SEMICOLON: 186,
-        //DOM_VK_COMMA: 188,
-        //DOM_VK_PERIOD: 190,
-        //DOM_VK_SLASH: 191,
-        //DOM_VK_BACK_QUOTE: 192,
-        //DOM_VK_OPEN_BRACKET: 219,
-        //DOM_VK_BACK_SLASH: 220,
-        //DOM_VK_CLOSE_BRACKET: 221,
-        //DOM_VK_QUOTE: 222,
-        //DOM_VK_META: 224
-    };
-}
+window.customElements.define(BV_VIDEO_PLAYER_TAG_NAME, HTMLBvVideoPlayer);

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>bvPlayer</title>
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+
+    <div class="block-for-video">
+      <bv-video-player src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" speed-controls hotkey>
+
+        <bv-quality-list>
+          <bv-quality value="1080">1080p <sup class="qsup">FHD</sup></bv-quality>
+          <bv-quality value="720">720p <sup class="qsup">HD</sup></bv-quality>
+          <bv-quality value="480">480p</bv-quality>
+        </bv-quality-list>
+
+        <bv-episode-list>
+          <bv-episode duration="30" title="Введение"></bv-episode>
+          <bv-episode duration="300" title="Короткое название эпизода"></bv-episode>
+          <bv-episode duration="221" title="Пример очень длинного названия текущего эпизода"></bv-episode>
+          <bv-episode duration="45" title="Заключение"></bv-episode>
+        </bv-episode-list>
+
+      </bv-video-player>
+    </div>
+
+    <div class="group" data-title="Episodes:">
+      <button id="episodeClear">Clear Episodes</button>
+      Название <input id="episodeTitle" type="text" value="Episode" style="width: 400px;" />
+      Длительность, % <input id="episodeDuration" type="number" min="0" max="100" value="50" />
+      <button id="episodeAdd">Add Episode </button>
+    </div>
+
+    <script src="../src/BvLogger.js"></script>
+    <script src="../src/"></script>
+    <script src="dist/index.js"></script>
+  </body>
+</html>

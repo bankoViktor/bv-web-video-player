@@ -146,7 +146,7 @@ Banko Viktor - [bankoViktor](https://github.com/bankoViktor) - bankviktor14@gmai
 [license-shield]: https://img.shields.io/github/license/bankoViktor/bv-web-video-player.svg?style=for-the-badge
 [license-url]: https://github.com/bankoViktor/bv-web-video-player/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[product-screenshot]: screenshot.png
+[product-screenshot]: images/screenshot.png
 [github-profile]: https://github.com/bankoViktor
 [jsdelivr-url]: https://www.jsdelivr.com
 [jsdelivr-badge]: https://data.jsdelivr.com/v1/package/gh/bankoViktor/bv-web-video-player/badge
