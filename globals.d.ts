@@ -2,7 +2,7 @@
 /**
  * Информация об эпизоде видео.
  */
-type EpisodeInfo = {
+interface EpisodeInfo {
     /**
      * Название эпизода.
      */
@@ -16,7 +16,7 @@ type EpisodeInfo = {
 /**
  * Качество видео.
  */
-type QualityItem = {
+interface QualityItem {
     /**
      * Значение URL параметра качества видео.
      */
@@ -30,7 +30,7 @@ type QualityItem = {
 /**
  * Эпизод видео.
  */
-type EpisodeItem = {
+interface EpisodeItem {
     /**
      * Длительность эпизода.
      */
@@ -44,7 +44,7 @@ type EpisodeItem = {
 /**
  * Ссылки на элементы эпизода видео.
  */
-type EpisodeSubItems = {
+interface EpisodeSubItems {
     /**
      * Элемент увеличения зоны интерактивности для курсора.
      */
@@ -70,7 +70,7 @@ type EpisodeSubItems = {
 /**
  * Параметры события изменения эпизода видео.
  */
-type ChangedEventOptions = {
+interface ChangedEventOptions {
     /**
      * Операция.
      */
@@ -78,5 +78,21 @@ type ChangedEventOptions = {
     /**
      * Элемент.
      */
-     element: HTMLElement,
+    element: HTMLElement,
+}
+
+interface HTMLDivElement {
+    currentPreview: number;
+    currentPreviewImage: number;
+}
+
+interface Window {
+    /**
+     * Координата X. ??
+     */
+    pageX: number;
+    /**
+     * Координата Y. ??
+     */
+    pageY: number;
 }

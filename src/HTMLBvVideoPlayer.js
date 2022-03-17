@@ -1,11 +1,12 @@
 // HTMLBvVideoPlayer.js
 
 const BV_VIDEO_PLAYER_TAG_NAME = 'bv-video-player';
-const BV_PLAYER_SOURCE_ATTRIBUTE_NAME = 'src';
-const BV_PLAYER_PARAM_ATTRIBUTE_NAME = 'param';
-const BV_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME = 'speed-control';
-const BV_PLAYER_HOTKEY_ATTRIBUTE_NAME = 'hotkey';
-
+const BV_VIDEO_PLAYER_SOURCE_ATTRIBUTE_NAME = 'src';
+const BV_VIDEO_PLAYER_PARAM_ATTRIBUTE_NAME = 'param';
+const BV_VIDEO_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME = 'speed-control';
+const BV_VIDEO_PLAYER_HOTKEY_ATTRIBUTE_NAME = 'hotkey';
+const BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME = 'progress-scrubber-episode';
+const BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME = 'episode-padding';
 
 class HTMLBvVideoPlayer extends HTMLElement {
 
@@ -140,6 +141,23 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._isInitialized = false;
 
+        /**
+         * @type {NodeJS.Timer}
+         */
+        this._moveTimer = null;
+
+        /**
+         * Элемент нижней панели.
+         * @type {HTMLDivElement}
+         */
+        this._panelBottonEl = null;
+
+        /**
+         * Всплывающее меню настроек.
+         * @type {HTMLDivElement} 
+         */
+        this._popupMenuEl = null;
+
         //#endregion Properties
 
         //#region Window Events Handlers
@@ -153,75 +171,75 @@ class HTMLBvVideoPlayer extends HTMLElement {
             switch (e.keyCode) {
 
                 case KeyEvent.DOM_VK_F:
-                    this._fullscrButton.click();
+                    this._fullscrButtonEl.click();
                     break;
 
                 case KeyEvent.DOM_VK_SPACE:
                 case KeyEvent.DOM_VK_K:
-                    if (this._video.paused) {
-                        this._playButton.click();
-                    } else if (this._video.playbackRate != 1) {
-                        this._video.playbackRate = 1;
-                        this._setSpeed(this._video, this._playSpeedDef);
+                    if (this._videoEl.paused) {
+                        this._playButtonEl.click();
+                    } else if (this._videoEl.playbackRate != 1) {
+                        this._videoEl.playbackRate = 1;
+                        this._setSpeed(this._videoEl, this._playSpeedDef);
                     } else {
-                        this._playButton.click();
+                        this._playButtonEl.click();
                     }
                     break;
 
                 case KeyEvent.DOM_VK_LEFT:
-                    this._video.currentTime = Math.max(this._video.currentTime - this._moveTimeStep, 0);
+                    this._videoEl.currentTime = Math.max(this._videoEl.currentTime - this._moveTimeStep, 0);
                     break;
 
                 case KeyEvent.DOM_VK_H:
-                    if (!this._video.paused) {
-                        this._playButton.click();
+                    if (!this._videoEl.paused) {
+                        this._playButtonEl.click();
                     }
-                    this._video.currentTime = Math.max(this._video.currentTime - 1 / 25, 0);
+                    this._videoEl.currentTime = Math.max(this._videoEl.currentTime - 1 / 25, 0);
                     break;
 
                 case KeyEvent.DOM_VK_RIGHT:
-                    this._video.currentTime = Math.min(this._video.currentTime + this._moveTimeStep, this._video.duration);
+                    this._videoEl.currentTime = Math.min(this._videoEl.currentTime + this._moveTimeStep, this._videoEl.duration);
                     break;
 
                 case KeyEvent.DOM_VK_SEMICOLON:
-                    if (!this._video.paused) {
-                        this._playButton.click();
+                    if (!this._videoEl.paused) {
+                        this._playButtonEl.click();
                     }
-                    this._video.currentTime = Math.min(this._video.currentTime + 1 / 25, this._video.duration);
+                    this._videoEl.currentTime = Math.min(this._videoEl.currentTime + 1 / 25, this._videoEl.duration);
                     break;
 
                 case KeyEvent.DOM_VK_I:
-                    this._pipButton.click();
+                    this._pipButtonEl.click();
                     break;
 
                 case KeyEvent.DOM_VK_J:
-                    this._slowerButton.click();
+                    this._slowerButtonEl.click();
                     break;
 
                 case KeyEvent.DOM_VK_L:
-                    this._fasterButton.click();
+                    this._fasterButtonEl.click();
                     break;
 
                 case KeyEvent.DOM_VK_M:
-                    this._volumeButton.click();
-                    if (this._video.volume == 0) {
-                        this._video.muted = false;
-                        this._video.volume = 1;
+                    this._volumeButtonEl.click();
+                    if (this._videoEl.volume == 0) {
+                        this._videoEl.muted = false;
+                        this._videoEl.volume = 1;
                     }
                     break;
 
                 case KeyEvent.DOM_VK_UP:
-                    this._video.volume = Math.min(Math.floor(this._video.volume * 100) / 100 + this._volumeStep, 1);
-                    if (this._video.muted) {
-                        this._video.muted = false;
+                    this._videoEl.volume = Math.min(Math.floor(this._videoEl.volume * 100) / 100 + this._volumeStep, 1);
+                    if (this._videoEl.muted) {
+                        this._videoEl.muted = false;
                     }
                     e.preventDefault();
                     break;
 
                 case KeyEvent.DOM_VK_DOWN:
-                    this._video.volume = Math.max(Math.floor(this._video.volume * 100) / 100 - this._volumeStep, 0);
-                    if (this._video.muted) {
-                        this._video.muted = false;
+                    this._videoEl.volume = Math.max(Math.floor(this._videoEl.volume * 100) / 100 - this._volumeStep, 0);
+                    if (this._videoEl.muted) {
+                        this._videoEl.muted = false;
                     }
                     e.preventDefault();
                     break;
@@ -233,7 +251,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 e.keyCode >= KeyEvent.DOM_VK_NUMPAD0 && e.keyCode <= KeyEvent.DOM_VK_NUMPAD9) {
                 const base = e.keyCode < 96 ? 48 : 96;
                 const m = (e.keyCode - base) / 10;
-                this._video.currentTime = this._video.duration * m;
+                this._videoEl.currentTime = this._videoEl.duration * m;
             }
 
         });
@@ -254,27 +272,30 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._updateScrubber();
 
                 const time = this._getTimeByPageX(e.pageX);
-                this._video.currentTime = time;
+                this._videoEl.currentTime = time;
 
                 if (this._keepPlay) {
-                    this._video.play();
+                    this._videoEl.play();
                 }
             }
         });
         window.addEventListener('mousemove', async e => {
+            // @ts-ignore
             window.pageX = e.pageX;
+            // @ts-ignore
             window.pageY = e.pageY;
 
             const updateScaling = () => {
+                /** @type {HTMLLIElement} */
                 const currentHoverEpisode = this._getCurrentHoverEpisode(e.pageX);
                 // Progress Hover
-                this._progressBar.classList.add('progress-hover');
+                this._progressBarEl.classList.add('progress-hover');
                 // Set Scale
-                for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                for (let i = 0; i < this._episodesContainerEl.children.length; i++) {
                     /** @type {HTMLLIElement} */
                     // @ts-ignore
-                    const episode = this._episodesContainer.children[i];
-                    if (episode === currentHoverEpisode && this._episodesContainer.children.length > 1) {
+                    const episode = this._episodesContainerEl.children[i];
+                    if (episode === currentHoverEpisode && this._episodesContainerEl.children.length > 1) {
                         episode.classList.add('episode-hover-current');
                     } else {
                         episode.classList.remove('episode-hover-current');
@@ -285,6 +306,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._updateScrubber();
             }
 
+            /** @type {number} */
             const hoverTime = this._getTimeByPageX(e.pageX);
             if (hoverTime != null) {
                 if (this._isMouseDown) {
@@ -294,28 +316,32 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     // Scale
                     updateScaling();
                 } else {
-                    if (e.path.includes(this._progressBar)) {
+                    // @ts-ignore
+                    if (e.path.includes(this._progressBarEl)) {
                         this._setProgressSeekPosition(hoverTime, e.pageX);
                         this._setProgressSubItemsPosition('hover', hoverTime);
                         // Scale
                         updateScaling();
                     } else {
                         // Reset Progress Hover
-                        this._progressBar.classList.remove('progress-hover');
+                        this._progressBarEl.classList.remove('progress-hover');
                         // Reset Episode
-                        for (let i = 0; i < this._episodesContainer.children.length; i++) {
+                        for (let i = 0; i < this._episodesContainerEl.children.length; i++) {
                             /** @type {HTMLLIElement} */
                             // @ts-ignore
-                            const episode = this._episodesContainer.children[i];
+                            const episode = this._episodesContainerEl.children[i];
                             episode.classList.remove('episode-hover-current');
                             // Hover
+                            /** @type {EpisodeSubItems} */
                             const subItems = HTMLBvVideoPlayer._getEpisodeSubItems(episode);
-                            subItems.hoverEl.style.width = 0;
+                            subItems.hoverEl.style.width = '0';
                         }
                         // Seek
-                        this._seekContainer.style.opacity = 0;
+                        if (this._seekContainerEl !== null) {
+                            this._seekContainerEl.style.opacity = '0';
+                        }
                         // Scrubber
-                        this._progressScrubber.classList.remove('progress-scrubber-episode');
+                        this._progressScrubberEl.classList.remove('progress-scrubber-episode');
                     }
                 }
             }
@@ -329,14 +355,18 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._updateFullScreenButtonState();
         });
         this.addEventListener('dblclick', e => {
-            if (e.path[0] === this._video) {
-                this._fullscrButton.click();
+            // @ts-ignore
+            if (e.path[0] === this._videoEl) {
+                this._fullscrButtonEl.click();
             }
         });
         this.addEventListener('click', e => {
+            /** @type {boolean} */
             let isClosing = true;
+            // @ts-ignore
             for (let i = 0; i < e.path.length; i++) {
-                if (e.path[i] === this._settingsButton) {
+                // @ts-ignore
+                if (e.path[i] === this._settingsButtonEl) {
                     isClosing = false;
                     break;
                 }
@@ -348,8 +378,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this.addEventListener('mousemove', () => {
             this._moveTimerCount = this._fadeCtrlSec;
             // Отображение
-            this._panelBotton.classList.remove('hided');
-            this._gradientBotton.classList.remove('hided');
+            this._panelBottonEl.classList.remove('hided');
+            if (this._gradientBottonEl !== null) {
+                this._gradientBottonEl.classList.remove('hided');
+            }
             // Отображение курсора в полноэкранном режиме
             if (document.fullscreenElement) {
                 this.style.cursor = '';
@@ -358,19 +390,19 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this.addEventListener('qualitylist-changed', e => {
             this._logger.log('QualityList changed');
 
-            /**
-             * @type {QualityChangedEventOptions}
-             */
+            /** @type {ChangedEventOptions} */
+            // @ts-ignore
             const options = e.detail;
             switch (options.action) {
 
                 case 'added':
-                    const menuItem = this.createMenuItem(options.element.value, options.element.innerHTML);
-                    this._menuItemList.appendChild(menuItem);
-                    // Первый по-умолчанию
-                    if (this._curParValue === null) {
-                        menuItem.click();
-                    }
+                    ///** @type {HTMLLIElement} */
+                    //const menuItem = this.createMenuItem(options.element.value, options.element.innerHTML);
+                    //this._menuItemList.appendChild(menuItem);
+                    //// Первый по-умолчанию
+                    //if (this._curParValue === null) {
+                    //    menuItem.click();
+                    //}
                     break;
 
                 case 'removed':
@@ -386,20 +418,19 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this.addEventListener('--episodelist-changed', e => {
             this._logger.log('EpisodeList changed');
 
-            if (isNaN(this._video.duration))
+            if (isNaN(this._videoEl.duration))
                 return;
 
-            /**
-             * @type {EpisodeChangedEventOptions} 
-             */
+            /** @type {ChangedEventOptions} */
+            // @ts-ignore
             const options = e.detail;
             switch (options.action) {
 
                 case 'added':
-                    this._appendEpisode({
-                        duration: options.episodeEl.duration,
-                        title: options.episodeEl.title,
-                    })
+                    // this._appendEpisode({
+                    //     duration: options.episodeEl.duration,
+                    //     title: options.episodeEl.title,
+                    // })
                     break;
 
                 case 'removed':
@@ -415,62 +446,165 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         //#endregion This Events
 
-        this._logger.log('constructor');
-    }
-
-    /**
-     * @returns {void}
-     */
-    _updateScrubber() {
         /**
-         * Проверяет попадания точки в прямоугольник.
-         * @param {DOMRect} rect Прямоугольная область.
-         * @param {DOMPoint} point Точка.
-         * @returns {boolean}
+         * Контейнер всплывающего контейнера с превью и временем.
+         * @type {HTMLDivElement}
          */
-        const isPointInRect = function (rect, point) {
-            const byX = point.x >= rect.left && point.x <= rect.right;
-            const byY = point.y >= rect.top && point.y <= rect.bottom;
-            return byX && byY;
-        }
+        this._seekContainerEl = null;
 
-        if (this._episodesContainer.children.length > 1) {
-            if (typeof window.pageX !== 'undefined' && window.pageX !== null && window.pageX >= 0) {
-                const episode = this._getCurrentHoverEpisode(window.pageX);
-                const bounding = episode.querySelector('.episode-padding').getBoundingClientRect();
-                const scrubberBounding = this._progressScrubber.getBoundingClientRect();
-                const point = new DOMPoint(scrubberBounding.left + scrubberBounding.width / 2, window.pageY);
-                if (isPointInRect(bounding, point)) {
-                    this._progressScrubber.classList.add('progress-scrubber-episode');
-                } else {
-                    this._progressScrubber.classList.remove('progress-scrubber-episode');
-                }
-            }
-        } else {
-            this._progressScrubber.classList.remove('progress-scrubber-episode');
-        }
+        /**
+         * Миниатюра.
+         * @type {HTMLDivElement}
+         */
+        this._hoverPreviewEl = null;;
+
+        /**
+         * Название эпизода.
+         * @type {HTMLDivElement}
+         */
+        this._hoverCaptionEl = null;
+
+        /**
+         * Время.
+         * @type {HTMLDivElement}
+         */
+        this._hoverTimeEl = null;
+
+        /**
+         * Прогресс бар. Содержит список эпизодов и ползунок.
+         * @type {HTMLDivElement}
+         */
+        this._progressBarEl = null;
+
+        /**
+         * Список эпизодов.
+         * @type {HTMLUListElement}
+         */
+        this._episodesContainerEl = null;
+
+        /**
+         * Красная точка на прогресс-баре.
+         * @type {HTMLDivElement}
+         */
+        this._progressScrubberEl = null;
+
+        /**
+         * Кнопка воспроизведения/остановка.
+         * @type {HTMLButtonElement}
+         */
+        this._playButtonEl = null;
+
+        /**
+         * Кнопка выключения/включения звука.
+         * @type {HTMLButtonElement}
+         */
+        this._volumeButtonEl = null;
+ 
+        /**
+         * Полоса заполнения, отображает уровень громкости. 
+         * @type {HTMLDivElement}
+         */
+        this._volumeSliderFillEl = null;
+
+        /**
+         * Движок контрола уровеня громкости.
+         * @type { HTMLDivElement }
+         */
+        this._volumeSliderThumb = null;
+ 
+        /**
+         * Индекатор времени.
+         * @type {HTMLSpanElement}
+         */
+        this._timeIndicator = null;
+
+        /**
+         * Кнопка уменьшения скорость воспроизведения.
+         * @type {HTMLButtonElement}
+         */
+        this._slowerButtonEl = null;
+
+        /**
+         * Кнопка-индикатор скорости воспроизведения.
+         * @type {HTMLButtonElement}
+         */
+        this._speedIndicatorButtonEl = null;
+
+        /**
+         * Контейнер индикатора скорости воспроизведения.
+         * @type {HTMLDivElement}
+         */
+        this._speedIndicatorContentEl = null;
+
+        /**
+         * Кнопка увелечения скорость воспроизведения. 
+         * @type {HTMLButtonElement}
+         */
+        this._fasterButtonEl = null;
+
+        /**
+         * Кнопка настроек.
+         * @type {HTMLButtonElement}
+         */
+        this._settingsButtonEl = null;
+
+        /**
+         * Кнопка включения/выключения режима картинка-в-картинке.
+         * @type {HTMLButtonElement}
+         */
+        this._pipButtonEl = null;
+
+        /**
+         * Кнопка включения/выключения полноэкранного режима.
+         * @type {HTMLButtonElement}
+         */
+        this._fullscrButtonEl = null;
+        
+        /**
+         * Bottom Gradient
+         * @type {HTMLDivElement}
+         */
+        this._gradientBottonEl = null;
+
+        //#region Create Video
+
+        /**
+         * Элемент Video.
+         * @type {HTMLVideoElement} 
+         */
+        this._videoEl = null;
+
+        /**
+         * Спинер загрузки.
+         * @type {SVGSVGElement}
+         */
+        this._spinnerWrapperEl = null;
+
+        //#endregion Elements
+
+        this._logger.log('constructor');
     }
 
     static get observedAttributes() {
         return [
-            BV_PLAYER_SOURCE_ATTRIBUTE_NAME,
-            BV_PLAYER_PARAM_ATTRIBUTE_NAME,
-            BV_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME,
-            BV_PLAYER_HOTKEY_ATTRIBUTE_NAME,
+            BV_VIDEO_PLAYER_SOURCE_ATTRIBUTE_NAME,
+            BV_VIDEO_PLAYER_PARAM_ATTRIBUTE_NAME,
+            BV_VIDEO_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME,
+            BV_VIDEO_PLAYER_HOTKEY_ATTRIBUTE_NAME,
         ];
     }
 
     get source() { return this._src; }
-    set source(v) { this.setAttribute(BV_PLAYER_SOURCE_ATTRIBUTE_NAME, v); }
+    set source(v) { this.setAttribute(BV_VIDEO_PLAYER_SOURCE_ATTRIBUTE_NAME, v); }
 
     get param() { return this._param; }
-    set param(v) { this.setAttribute(BV_PLAYER_PARAM_ATTRIBUTE_NAME, v); }
+    set param(v) { this.setAttribute(BV_VIDEO_PLAYER_PARAM_ATTRIBUTE_NAME, v); }
 
     get speedControls() { return this._speedControls; }
-    set speedControls(v) { this.setAttribute(BV_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME, v.toString()); }
+    set speedControls(v) { this.setAttribute(BV_VIDEO_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME, v.toString()); }
 
     get hotkey() { return this._hotkey; }
-    set hotkey(v) { this.setAttribute(BV_PLAYER_HOTKEY_ATTRIBUTE_NAME, v.toString()); }
+    set hotkey(v) { this.setAttribute(BV_VIDEO_PLAYER_HOTKEY_ATTRIBUTE_NAME, v.toString()); }
 
     /**
      * Компоненту добавляют, удаляют или изменяют атрибут.
@@ -489,22 +623,22 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         switch (name) {
 
-            case BV_PLAYER_SOURCE_ATTRIBUTE_NAME:
+            case BV_VIDEO_PLAYER_SOURCE_ATTRIBUTE_NAME:
                 this._src = newValue;
                 break;
 
-            case BV_PLAYER_PARAM_ATTRIBUTE_NAME:
+            case BV_VIDEO_PLAYER_PARAM_ATTRIBUTE_NAME:
                 this._param = newValue;
                 break;
 
-            case BV_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME:
+            case BV_VIDEO_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME:
                 this._speedControls = newValue.toLowerCase() !== 'false';
                 if (this._isInitialized) {
                     this._updateSpeedControls();
                 }
                 break;
 
-            case BV_PLAYER_HOTKEY_ATTRIBUTE_NAME:
+            case BV_VIDEO_PLAYER_HOTKEY_ATTRIBUTE_NAME:
                 this._hotkey = newValue.toLowerCase() !== 'false';
                 if (this._isInitialized) {
                     this._updateControls();
@@ -523,7 +657,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         }
         this._updateControls();
 
-        this._logger.log('connected');
+        this._logger.log(`connected`);
     }
 
     /** 
@@ -531,10 +665,51 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     disconnectedCallback() {
-        clearInterval(this._moveTimerId);
-        this._moveTimerId = 0;
+        clearInterval(this._moveTimer);
+        this._moveTimer = null;
 
         this._logger.log('disconnected');
+    }
+
+    /**
+     * @returns {void}
+     */
+    _updateScrubber() {
+        /**
+         * Проверяет попадания точки в прямоугольник.
+         * @param {DOMRect} rect Прямоугольная область.
+         * @param {DOMPoint} point Точка.
+         * @returns {boolean}
+         */
+        const isPointInRect = function (rect, point) {
+            /** @type {boolean} */
+            const byX = point.x >= rect.left && point.x <= rect.right;
+            /** @type {boolean} */
+            const byY = point.y >= rect.top && point.y <= rect.bottom;
+            return byX && byY;
+        }
+
+        if (this._episodesContainerEl.children.length > 1) {
+            if (typeof window.pageX !== 'undefined'
+                && window.pageX !== null
+                && window.pageX >= 0) {
+                /** @type {HTMLLIElement} */
+                const episode = this._getCurrentHoverEpisode(window.pageX);
+                /** @type {DOMRect} */
+                const bounding = episode.querySelector(BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME).getBoundingClientRect();
+                /** @type {DOMRect} */
+                const scrubberBounding = this._progressScrubberEl.getBoundingClientRect();
+                /** @type {DOMPoint} */
+                const point = new DOMPoint(scrubberBounding.left + scrubberBounding.width / 2, window.pageY);
+                if (isPointInRect(bounding, point)) {
+                    this._progressScrubberEl.classList.add(BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME);
+                } else {
+                    this._progressScrubberEl.classList.remove(BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME);
+                }
+            }
+        } else {
+            this._progressScrubberEl.classList.remove(BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME);
+        }
     }
 
     /** 
@@ -542,7 +717,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _spinnerShow() {
-        this._spinnerWrapper.style.visibility = 'visible';
+        this._spinnerWrapperEl.style.visibility = 'visible';
     }
 
     /** 
@@ -550,7 +725,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _spinnerHide() {
-        this._spinnerWrapper.style.visibility = 'collapse';
+        this._spinnerWrapperEl.style.visibility = 'collapse';
     }
 
     /**
@@ -559,8 +734,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _showMenu(isShow = true) {
-        this._popupMenu.style.visibility = isShow ? 'visible' : 'collapse';
-        this._popupMenu.style.opacity = isShow ? '1' : '0';
+        this._popupMenuEl.style.visibility = isShow ? 'visible' : 'collapse';
+        this._popupMenuEl.style.opacity = isShow ? '1' : '0';
     }
 
     /**
@@ -577,27 +752,27 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         switch (element) {
 
-            case this._fasterButton:
+            case this._fasterButtonEl:
                 key = 'L';
                 break;
 
-            case this._playButton:
+            case this._playButtonEl:
                 key = 'K';
                 break;
 
-            case this._slowerButton:
+            case this._slowerButtonEl:
                 key = 'J';
                 break;
 
-            case this._volumeButton:
+            case this._volumeButtonEl:
                 key = 'M';
                 break;
 
-            case this._pipButton:
+            case this._pipButtonEl:
                 key = 'I';
                 break;
 
-            case this._fullscrButton:
+            case this._fullscrButtonEl:
                 key = 'F';
                 break;
         }
@@ -622,12 +797,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _setVolume(e) {
+        /** @type {number} */
+        // @ts-ignore
         let x = e.offsetX;
 
         if (e.target === this._volumeSliderThumb) {
+            // @ts-ignore
             x = e.target.offsetLeft + e.offsetX + 6;
         }
 
+        // @ts-ignore
         const width = e.currentTarget.clientWidth - 1;
         let val = x / width;
 
@@ -637,11 +816,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
             val = 1;
         }
 
-        this._video.volume = val;
-        this._volumeSliderFill.style.width = `${val * 100}%`;
+        this._videoEl.volume = val;
+        this._volumeSliderFillEl.style.width = `${val * 100}%`;
 
-        if (this._video.muted) {
-            this._video.muted = false;
+        if (this._videoEl.muted) {
+            this._videoEl.muted = false;
         }
     }
 
@@ -664,14 +843,18 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _updateTime() {
-        const cur = this._video.currentTime;
-        const dur = this._video.duration;
+        /** @type {number} */
+        const cur = this._videoEl.currentTime;
+        /** @type {number} */
+        const dur = this._videoEl.duration;
 
         if (isNaN(cur) || isNaN(dur)) {
             this._timeIndicator.style.visibility = 'collapse';
         } else {
             this._timeIndicator.style.visibility = 'visible';
+            /** @type {string} */
             const curStr = dur2str(cur);
+            /** @type {string} */
             const durStr = dur2str(dur);
             this._timeIndicator.textContent = `${curStr} / ${durStr}`;
         }
@@ -682,11 +865,13 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _updateMenu() {
-        /** @type {Array<HTMLDivElement>} */
+        /** @type {HTMLDivElement[]} */
         // @ts-ignore
         const items = Array.from(this._menuItemList.children);
-        items.forEach((element, _i, _ar) => {
+        items.forEach((element) => {
+            /** @type {boolean} */
             const isSelected = this._curParValue === element.getAttribute('data-value');
+            // @ts-ignore
             element.querySelector('.menu-item-icon').style.visibility = isSelected ? 'visible' : 'hidden';
         });
     }
@@ -696,8 +881,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _updatePlayButtonState() {
-        this._playButton.title = (this._video.paused ? 'Смотреть' : 'Пауза') + this._hotkeyPrint(this._playButton);
-        this._playButton.innerHTML = this._video.paused
+        this._playButtonEl.title = (this._videoEl.paused ? 'Смотреть' : 'Пауза') + this._hotkeyPrint(this._playButtonEl);
+        this._playButtonEl.innerHTML = this._videoEl.paused
             ? `<svg viewBox='0 0 36 36'><path d='m12 26 6.5-4v-8l-6.5-4zm6.5-4 6.5-4-6.5-4z'/></svg>`
             : `<svg viewBox='0 0 36 36'><path d='m12 26h4v-16h-4zm9 0h4v-16h-4z'/></svg>`;
     }
@@ -707,14 +892,14 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _updateVolumeButtonState() {
-        const vol = this._video.volume;
-        this._volumeButton.title = (this._video.muted || vol === 0 ? 'Включение звука' : 'Отключение звука') + this._hotkeyPrint(this._volumeButton);
-        this._volumeButton.innerHTML = this._video.muted || vol === 0
+        const vol = this._videoEl.volume;
+        this._volumeButtonEl.title = (this._videoEl.muted || vol === 0 ? 'Включение звука' : 'Отключение звука') + this._hotkeyPrint(this._volumeButtonEl);
+        this._volumeButtonEl.innerHTML = this._videoEl.muted || vol === 0
             ? '<svg viewBox="0 0 36 36"><path d="M21.48 17.98a4.5 4.5 0 0 0-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51a8.796 8.796 0 0 0 1.03-4.15c0-4.28-2.99-7.86-7-8.76v2.05c2.89.86 5 3.54 5 6.71zm-14.73-9-1.27 1.26 4.72 4.73H7.98v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81l2.04 2.05 1.27-1.27-9-9-7.72-7.72zm7.72.99-2.09 2.08 2.09 2.09V9.98z"/></svg>'
             : (vol < 0.5
                 ? '<svg viewBox="0 0 36 36"><path d="M8 21h4l5 5V10l-5 5H8v6Zm11-7v8c1.48-.68 2.5-2.23 2.5-4 0-1.74-1.02-3.26-2.5-4Z"/></svg>'
                 : '<svg viewBox="0 0 36 36"><path d="M8 21h4l5 5V10l-5 5H8v6Zm11-7v8c1.48-.68 2.5-2.23 2.5-4 0-1.74-1.02-3.26-2.5-4Zm0-2.71c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77v2.06Z"/></svg>');
-        this._volumeSliderFill.style.width = this._video.volume * 100 + '%';
+        this._volumeSliderFillEl.style.width = this._videoEl.volume * 100 + '%';
     }
 
     /**
@@ -723,8 +908,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _updatePipButtonState(isActive = false) {
-        this._pipButton.title = (isActive ? 'Закрыть мини проигрыватель' : 'Открыть мини проигрыватель') + this._hotkeyPrint(this._pipButton);
-        this._pipButton.innerHTML = isActive
+        this._pipButtonEl.title = (isActive ? 'Закрыть мини проигрыватель' : 'Открыть мини проигрыватель') + this._hotkeyPrint(this._pipButtonEl);
+        this._pipButtonEl.innerHTML = isActive
             ? `<svg viewBox='0 0 36 36'><path d='M11 13v10h14V13zm18 12V10.98C29 9.88 28.1 9 27 9H9c-1.1 0-2 .88-2 1.98V25c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H9V10.97h18v14.05z'/></svg>`
             : `<svg viewBox="0 0 36 36"><path d="M25 17h-8v6h8v-6zm4 8V10.98C29 9.88 28.1 9 27 9H9c-1.1 0-2 .88-2 1.98V25c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H9V10.97h18v14.05z"/></svg>`;
     }
@@ -735,20 +920,20 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     _updateSpeedControls() {
         // Slower
-        this._slowerButton.hidden = !this._speedControls;
-        this._slowerButton.disabled = this._playSpeedCur <= 0;
-        this._slowerButton.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButton);
+        this._slowerButtonEl.hidden = !this._speedControls;
+        this._slowerButtonEl.disabled = this._playSpeedCur <= 0;
+        this._slowerButtonEl.title = `Уменьшить скорость воспроизведения` + this._hotkeyPrint(this._slowerButtonEl);
         // Faster
-        this._fasterButton.hidden = !this._speedControls;
-        this._fasterButton.disabled = this._playSpeedCur >= this._playSpeeds.length - 1;
-        this._fasterButton.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButton);
+        this._fasterButtonEl.hidden = !this._speedControls;
+        this._fasterButtonEl.disabled = this._playSpeedCur >= this._playSpeeds.length - 1;
+        this._fasterButtonEl.title = `Увеличить скорость воспроизведения` + this._hotkeyPrint(this._fasterButtonEl);
         // Speed Indicator
-        this._speedIndicatorContent.hidden = !this._speedControls;
-        this._speedIndicatorButton.disabled = this._playSpeedCur == this._playSpeedDef;
-        this._speedIndicatorContent.title = this._playSpeedCur == this._playSpeedDef
+        this._speedIndicatorContentEl.hidden = !this._speedControls;
+        this._speedIndicatorButtonEl.disabled = this._playSpeedCur == this._playSpeedDef;
+        this._speedIndicatorContentEl.title = this._playSpeedCur == this._playSpeedDef
             ? 'Текущая скорость воспроизведения'
-            : 'К нормальной скорости воспроизведения' + this._hotkeyPrint(this._playButton);
-        this._speedIndicatorContent.innerText = "x" + this._video.playbackRate;
+            : 'К нормальной скорости воспроизведения' + this._hotkeyPrint(this._playButtonEl);
+        this._speedIndicatorContentEl.innerText = "x" + this._videoEl.playbackRate;
     }
 
     /**
@@ -756,8 +941,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _updateFullScreenButtonState() {
-        this._fullscrButton.title = (document.fullscreen ? 'Выход из полноэкранного режима' : 'Во весь экран') + this._hotkeyPrint(this._fullscrButton);
-        this._fullscrButton.innerHTML = document.fullscreen
+        this._fullscrButtonEl.title = (document.fullscreen ? 'Выход из полноэкранного режима' : 'Во весь экран') + this._hotkeyPrint(this._fullscrButtonEl);
+        this._fullscrButtonEl.innerHTML = document.fullscreen
             ? '<svg viewBox="0 0 36 36"><path d="M14 14h-4v2h6v-6h-2v4zM22 14v-4h-2v6h6v-2h-4zM20 26h2v-4h4v-2h-6v6zM10 22h4v4h2v-6h-6v2z"/></svg>'
             : '<svg viewBox="0 0 36 36"><path d="M10 16h2v-4h4v-2h-6v6zM20 10v2h4v4h2v-6h-6zM24 24h-4v2h6v-6h-2v4zM12 20h-2v6h6v-2h-4v-4z"/></svg>';
     }
@@ -769,38 +954,53 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {number?}
      */
     _getTimeByPageX(pageX) {
-        const bounding = this._progressBar.getBoundingClientRect();
-        if (pageX >= bounding.left &&
-            pageX < bounding.right) {
+        if (this._progressBarEl === null) {
+            return null;
+        }
+
+        /** @type {DOMRect} */
+        const bounding = this._progressBarEl.getBoundingClientRect();
+        if (pageX >= bounding.left
+            && pageX < bounding.right) {
+            /** @type {number} */
             const percent = (pageX - bounding.left) / bounding.width;
-            return percent * this._video.duration;
+            return percent * this._videoEl.duration;
         }
         return null;
     }
 
     /**
      * @param {'play'|'hover'} subItem
-     * @param {any} time
+     * @param {number} time
      * @returns {void}
      */
     _setProgressSubItemsPosition(subItem, time) {
-        const progressBounding = this._progressBar.getBoundingClientRect();
-        const progressLeft = progressBounding.left + time / this._video.duration * progressBounding.width;
+        /** @type {DOMRect} */
+        const progressBounding = this._progressBarEl.getBoundingClientRect();
+        /** @type {number} */
+        const progressLeft = progressBounding.left + time / this._videoEl.duration * progressBounding.width;
 
-        for (let i = 0; i < this._episodesContainer.children.length; i++) {
+        for (let i = 0; i < this._episodesContainerEl.children.length; i++) {
             /** @type {HTMLLIElement} */
-            const episode = this._episodesContainer.children[i];
+            // @ts-ignore
+            const episode = this._episodesContainerEl.children[i];
+            /** @type {HTMLLIElement} */
             const episodeSubItem = HTMLBvVideoPlayer._getEpisodeSubItems(episode)[subItem];
 
+            /** @type {DOMRect} */
             const episodeBounding = episode.getBoundingClientRect();
+            /** @type {number} */
             const paddingLeft = i > 0 ? episode.querySelector('div > ul').getBoundingClientRect().left - episodeBounding.left : 0;
 
+            /** @type {number} */
             const episodeLeft = episodeBounding.left + paddingLeft;
+            /** @type {number} */
             const episodeWidth = episodeBounding.width - paddingLeft;
 
             if (progressLeft < episodeLeft) {
                 episodeSubItem.style.width = '0';
             } else if (progressLeft >= episodeLeft && progressLeft < episodeLeft + episodeWidth) {
+                /** @type {number} */
                 const percent = (progressLeft - episodeLeft) / episodeWidth;
                 episodeSubItem.style.width = percent * 100 + '%';
             } else {
@@ -817,7 +1017,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._setProgressSubItemsPosition('play', time);
 
         // Scrubber
-        this._progressScrubber.style.left = time / this._video.duration * 100 + '%';
+        this._progressScrubberEl.style.left = time / this._videoEl.duration * 100 + '%';
     }
 
     /**
@@ -827,82 +1027,98 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     _setProgressSeekPosition(time, pageX) {
         // Seek Container
-        let marginLeft = pageX - this._progressBar.getBoundingClientRect().left;
-        marginLeft = Math.max(0, marginLeft - this._seekContainer.clientWidth / 2);
-        marginLeft = Math.min(marginLeft, this._progressBar.clientWidth - this._seekContainer.clientWidth);
-        this._seekContainer.style.marginLeft = marginLeft + 'px';
-        this._seekContainer.style.opacity = 1;
+
+        /** @type {number} */
+        let marginLeft = pageX - this._progressBarEl.getBoundingClientRect().left;
+        marginLeft = Math.max(0, marginLeft - this._seekContainerEl.clientWidth / 2);
+        marginLeft = Math.min(marginLeft, this._progressBarEl.clientWidth - this._seekContainerEl.clientWidth);
+        this._seekContainerEl.style.marginLeft = marginLeft + 'px';
+        this._seekContainerEl.style.opacity = '1';
 
         // Seek Preview
-        const previewNumber = Math.floor(time / this._previewStep);
-        if (this._hoverPreview.currentPreview !== previewNumber) {
-            this._hoverPreview.currentPreview = previewNumber;
 
+        /** @type {number} */
+        const previewNumber = Math.floor(time / this._previewStep);
+        if (this._hoverPreviewEl.currentPreview !== previewNumber) {
+            this._hoverPreviewEl.currentPreview = previewNumber;
+
+            /** @type {number} */
             const previewPerImage = this._previewsPerImageColumn * this._previewsPerImageRow;
+            /** @type {number} */
             const imageNumber = Math.floor(previewNumber / previewPerImage);
 
             /**
-             * Номер первого изображения. 
+             * Номер первого изображения.
+             * @type {number}
              */
             const imageNumberBase = 1;
 
-            if (this._hoverPreview.currentPreviewImage !== imageNumber) {
-                this._hoverPreview.currentPreviewImage = imageNumber;
+            if (this._hoverPreviewEl.currentPreviewImage !== imageNumber) {
+                this._hoverPreviewEl.currentPreviewImage = imageNumber;
 
                 // Change image with previews
-                const imageUrl = this._previewsHref.replace('{0}', imageNumberBase + imageNumber);
-                this._hoverPreview.style.backgroundImage = `url("${imageUrl}")`;
+                /** @type {string} */
+                const imageUrl = this._previewsHref.replace('{0}', (imageNumberBase + imageNumber).toString());
+                this._hoverPreviewEl.style.backgroundImage = `url("${imageUrl}")`;
 
                 // Hide if preview failed load
+                /** @type {HTMLImageElement} */
                 const checkImg = document.createElement('img');
                 checkImg.addEventListener('load', e => {
-                    this._hoverPreview.style.visibility = 'visible';
+                    this._hoverPreviewEl.style.visibility = 'visible';
                 });
                 checkImg.addEventListener('error', e => {
-                    this._hoverPreview.style.visibility = 'collapse';
+                    this._hoverPreviewEl.style.visibility = 'collapse';
                 });
                 checkImg.src = imageUrl;
             }
 
+            /** @type {number} */
             const lastPreviewNumber = previewNumber - imageNumber * previewPerImage;
+            /** @type {number} */
             const row = Math.floor(lastPreviewNumber / this._previewsPerImageRow);
+            /** @type {number} */
             const column = lastPreviewNumber - row * this._previewsPerImageColumn;
 
-            this._hoverPreview.style.backgroundPositionX = `calc(var(--preview-width) * -${column})`;
-            this._hoverPreview.style.backgroundPositionY = `calc(var(--preview-height) * -${row})`;
+            this._hoverPreviewEl.style.backgroundPositionX = `calc(var(--preview-width) * -${column})`;
+            this._hoverPreviewEl.style.backgroundPositionY = `calc(var(--preview-height) * -${row})`;
         }
 
         // Seek Episode name
-        if (this._hoverCaption.style.marginLeft !== '0px' || this._hoverCaption.style.marginRight !== '0px') {
-            this._hoverCaption.style.marginLeft = 0;
-            this._hoverCaption.style.marginRight = 0;
+        if (this._hoverCaptionEl.style.marginLeft !== '0px' || this._hoverCaptionEl.style.marginRight !== '0px') {
+            this._hoverCaptionEl.style.marginLeft = '0';
+            this._hoverCaptionEl.style.marginRight = '0';
         }
 
+        /** @type {HTMLLIElement} */
         const currentHoverEpisode = this._getCurrentHoverEpisode(pageX);
         if (currentHoverEpisode !== null) {
-            this._hoverCaption.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
-            const marginToggle = (this._hoverCaption.clientWidth - this._hoverPreview.offsetWidth) / 2;
+            this._hoverCaptionEl.textContent = currentHoverEpisode.getAttribute('data-title') ?? '';
+            /** @type {number} */
+            const marginToggle = (this._hoverCaptionEl.clientWidth - this._hoverPreviewEl.offsetWidth) / 2;
             if (marginLeft <= marginToggle) {
                 // left
-                this._hoverCaption.style.marginLeft = 0;
-                const margin = this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth ? - this._hoverCaption.clientWidth / 2 : 0;
-                this._hoverCaption.style.marginRight = margin + 'px';
-            } else if (marginLeft >= this._progressBar.clientWidth - this._hoverPreview.offsetWidth - marginToggle) {
+                this._hoverCaptionEl.style.marginLeft = '0';
+                /** @type {number} */
+                const margin = this._hoverCaptionEl.clientWidth > this._hoverPreviewEl.offsetWidth ? - this._hoverCaptionEl.clientWidth / 2 : 0;
+                this._hoverCaptionEl.style.marginRight = margin + 'px';
+            } else if (marginLeft >= this._progressBarEl.clientWidth - this._hoverPreviewEl.offsetWidth - marginToggle) {
                 // rigth
-                const margin = this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth ? this._hoverPreview.offsetWidth - this._hoverCaption.clientWidth : 0;
-                this._hoverCaption.style.marginLeft = margin + 'px';
-                this._hoverCaption.style.marginRight = 0;
+                /** @type {number} */
+                const margin = this._hoverCaptionEl.clientWidth > this._hoverPreviewEl.offsetWidth ? this._hoverPreviewEl.offsetWidth - this._hoverCaptionEl.clientWidth : 0;
+                this._hoverCaptionEl.style.marginLeft = margin + 'px';
+                this._hoverCaptionEl.style.marginRight = '0';
             } else {
                 // center
-                if (this._hoverCaption.clientWidth > this._hoverPreview.offsetWidth) {
-                    this._hoverCaption.style.marginLeft = - marginToggle + 'px';
-                    this._hoverCaption.style.marginRight = - marginToggle + 'px';
+                if (this._hoverCaptionEl.clientWidth > this._hoverPreviewEl.offsetWidth) {
+                    this._hoverCaptionEl.style.marginLeft = - marginToggle + 'px';
+                    this._hoverCaptionEl.style.marginRight = - marginToggle + 'px';
                 }
             }
         }
 
         // Seek Time
-        this._hoverTime.textContent = dur2str(time);
+        this._hoverTimeEl.textContent = dur2str(time);
     }
 
     /**
@@ -910,17 +1126,18 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {HTMLLIElement}
      */
     _getCurrentHoverEpisode(pageX) {
-        for (let i = 0; i < this._episodesContainer.children.length; i++) {
+        for (let i = 0; i < this._episodesContainerEl.children.length; i++) {
             /** @type {HTMLLIElement} */
-            const episode = this._episodesContainer.children[i];
+            // @ts-ignore
+            const episode = this._episodesContainerEl.children[i];
+            /** @type {DOMRect} */
             const bounding = episode.getBoundingClientRect();
-
+            /** @type {number} */
             let left = bounding.left;
             if (i > 0) {
-                /**
-                 * @type {HTMLLIElement}
-                 */
-                const previousEpisode = this._episodesContainer.children[i - 1];
+                /** @type {HTMLLIElement} */
+                // @ts-ignore
+                const previousEpisode = this._episodesContainerEl.children[i - 1];
                 left = previousEpisode.getBoundingClientRect().right;
             }
 
@@ -952,8 +1169,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _initialization() {
-        this._moveTimerId = setInterval(() => {
-            if (this._video.paused) {
+        this._moveTimer = setInterval(() => {
+            if (this._videoEl.paused) {
                 return;
             }
 
@@ -963,8 +1180,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 if (this._moveTimerCount != null) {
                     this._moveTimerCount = null;
                     // Скрываем
-                    this._panelBotton.classList.add('hided');
-                    this._gradientBotton.classList.add('hided');
+                    this._panelBottonEl.classList.add('hided');
+                    this._gradientBottonEl.classList.add('hided');
                     // Скрытие курсора в полноэкранном режиме
                     if (document.fullscreenElement) {
                         this.style.cursor = 'none';
@@ -976,580 +1193,627 @@ class HTMLBvVideoPlayer extends HTMLElement {
         // DOM
         const shadow = this.attachShadow({ mode: 'open' });
 
-        // Style 
-        const style = document.createElement('style');
-        style.textContent = '@import "styles.css" all;';
-        shadow.appendChild(style);
-
         /**
-         * Корневой элемент.
+         * Create Style for Import CSS
+         * @param {string} path
+         * @returns {HTMLElement}
          */
-        const root = document.createElement('div');
-        root.classList.add('root');
-
-        //#region Create Popup Menu
+        const CRT_ImportStylesheet = path => CRT('style', { textContent: `@import "${path}";`, });
 
         /**
-         * Всплывающее меню настроек.
-         * @type {HTMLDivElement} 
+         * Create Root
+         * @returns {DocumentFragment}
          */
-        this._popupMenu = document.createElement('div');
-        this._popupMenu.classList.add('menu');
-        root.appendChild(this._popupMenu);
-
-        /**
-        * Список пунктов всплывающего меню.
-        * @type {HTMLUListElement} 
-        */
-        this._menuItemList = document.createElement('ul');
-        this._popupMenu.appendChild(this._menuItemList);
-
-        //#endregion Create Popup Menu
-
-        //#region Create Bottom Panel
-
-        /**
-         * @type {HTMLDivElement}
-         */
-        this._panelBotton = document.createElement('div');
-        this._panelBotton.classList.add('panel-bottom', 'fade');
-        root.appendChild(this._panelBotton);
-
-        const panelWrapper = document.createElement('div');
-        panelWrapper.classList.add('panel-wrapper');
-        this._panelBotton.appendChild(panelWrapper);
-
-        //#region --- Create Preview, Episode name & Time
-
-        /**
-         * Контейнер всплывающего контейнера с превью и временем.
-         * @type {HTMLDivElement}
-         */
-        this._seekContainer = document.createElement('div');
-        this._seekContainer.classList.add('seek-container');
-        this._seekContainer.style.marginLeft = '50px';
-        this._seekContainer.style.marginRight = 'auto';
-        panelWrapper.appendChild(this._seekContainer);
-
-        /**
-         * Миниатюра.
-         * @type {HTMLDivElement}
-         */
-        this._hoverPreview = document.createElement('div');
-        this._hoverPreview.classList.add('progress-hover-preview');
-        this._seekContainer.appendChild(this._hoverPreview);
-
-        /**
-         * Название эпизода.
-         * @type {HTMLDivElement}
-         */
-        this._hoverCaption = document.createElement('div');
-        this._hoverCaption.classList.add('progress-hover-caption');
-        this._seekContainer.appendChild(this._hoverCaption);
-
-        /**
-         * Время.
-         * @type {HTMLDivElement}
-         */
-        this._hoverTime = document.createElement('div');
-        this._hoverTime.classList.add('progress-hover-time');
-        this._seekContainer.appendChild(this._hoverTime);
-
-        //#endregion --- Create Preview, Episode name & Time
-
-        //#region --- Create Progress Bar
-
-        /**
-         * Прогресс бар. Содержит список эпизодов и ползунок.
-         * @type {HTMLDivElement}
-         */
-        this._progressBar = document.createElement('div');
-        this._progressBar.classList.add('progress-bar');
-        this._progressBar.addEventListener('mousedown', async e => {
-            if (e.button === 0) { // Main
-                this._isMouseDown = true;
-
-                if (this._isMouseDown && !this._video.paused) {
-                    this._keepPlay = true;
-                    await this._video.pause();
-                }
-
-                const hoverTime = this._getTimeByPageX(e.pageX);
-                if (hoverTime != null) {
-                    this._setProgressPlayPosition(hoverTime);
-                }
-
-                this._updateScrubber();
-            }
-        });
-        panelWrapper.appendChild(this._progressBar);
-
-        /**
-         * Список эпизодов.
-         * @type {HTMLUListElement}
-         */
-        this._episodesContainer = document.createElement('ul');
-        this._episodesContainer.classList.add('episodes-container');
-        this._progressBar.appendChild(this._episodesContainer);
-
-        /**
-         * Красная точка на прогресс-баре.
-         * @type {HTMLDivElement}
-         */
-        this._progressScrubber = document.createElement('div');
-        this._progressScrubber.classList.add('progress-scrubber');
-        this._progressBar.appendChild(this._progressScrubber);
-
-        //#endregion --- Create Progress Bar
-
-        //#region --- Create Controls
-
-        const controlsContainer = document.createElement('div');
-        controlsContainer.classList.add('controls-container');
-        panelWrapper.appendChild(controlsContainer);
-
-        //#region ---|--- Create Left Controls Panel
-
-        const leftPanel = document.createElement('div');
-        leftPanel.classList.add('left-panel');
-        controlsContainer.appendChild(leftPanel);
-
-        /**
-         * Кнопка воспроизведения/остановка.
-         * @type {HTMLButtonElement}
-         */
-        this._playButton = document.createElement('button');
-        this._playButton.disabled = true;
-        this._playButton.addEventListener('click', async e => {
-            if (this._video.paused) {
-                await this._video.play();
-            } else {
-                await this._video.pause();
-                this._keepPlay = false;
-            }
-        });
-        leftPanel.appendChild(this._playButton);
-
-        //#region ---|---|--- Create Volume Control
-
-        const volumeContainer = document.createElement('div');
-        volumeContainer.classList.add('volume-container');
-        leftPanel.appendChild(volumeContainer);
-
-        /**
-         * Кнопка выключения/включения звука.
-         * @type {HTMLButtonElement}
-         */
-        this._volumeButton = document.createElement('button');
-        this._volumeButton.addEventListener('click', () => {
-            this._video.muted = !this._video.muted;
-
-            if (this._video.volume === 0) {
-                this._video.muted = false;
-                this._video.volume = 1;
-            }
-        });
-        volumeContainer.appendChild(this._volumeButton);
-
-        const volumeSlider = document.createElement('div');
-        volumeSlider.classList.add('volume-slider');
-        volumeSlider.title = 'Громкость';
-        volumeSlider.addEventListener('mousedown', () => {
-            this._volumePressed = true;
-        });
-        volumeSlider.addEventListener('mouseup', () => {
-            this._volumePressed = false;
-        });
-        volumeSlider.addEventListener('mouseleave', () => {
-            this._volumePressed = false;
-        });
-        volumeContainer.appendChild(volumeSlider);
-
-        const volumeSliderWrapper = document.createElement('div');
-        volumeSliderWrapper.classList.add('volume-slider-wrapper');
-        volumeSliderWrapper.addEventListener('mousemove', e => {
-            if (this._volumePressed) {
-                this._setVolume(e);
-            }
-        });
-        volumeSliderWrapper.addEventListener('mousedown', e => {
-            this._setVolume(e);
-        });
-        volumeSlider.appendChild(volumeSliderWrapper);
-
-        const volumeSliderTrack = document.createElement('div');
-        volumeSliderTrack.classList.add('volume-slider-track');
-        volumeSliderWrapper.appendChild(volumeSliderTrack);
-
-        /**
-         * Полоса заполнения, отображает уровень громкости. 
-         * @type {HTMLDivElement}
-         */
-        this._volumeSliderFill = document.createElement('div');
-        this._volumeSliderFill.classList.add('volume-slider-fill');
-        volumeSliderTrack.appendChild(this._volumeSliderFill);
-
-        /**
-         * Движок контрола уровеня громкости.
-         * @type { HTMLDivElement }
-         */
-        this._volumeSliderThumb = document.createElement('div');
-        this._volumeSliderThumb.classList.add('volume-slider-thumb');
-        this._volumeSliderFill.appendChild(this._volumeSliderThumb);
-
-        /**
-         * Индекатор времени.
-         * @type {HTMLSpanElement}
-         */
-        this._timeIndicator = document.createElement('div');
-        this._timeIndicator.classList.add('time-indicator');
-        this._timeIndicator.style.visibility = 'collapse';
-        leftPanel.appendChild(this._timeIndicator);
-
-        //#endregion ---|---|--- Create Volume Control
-
-        //#endregion ---|--- Create Left Controls Panel
-
-        //#region ---|--- Create Right Controls Panel
-
-        const rightPanel = document.createElement('div');
-        rightPanel.classList.add('right-panel');
-        controlsContainer.appendChild(rightPanel);
-
-        /**
-         * Кнопка уменьшения скорость воспроизведения.
-         * @type {HTMLButtonElement}
-         */
-        this._slowerButton = document.createElement('button');
-        this._slowerButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 28.5,26 15.5,18 28.5,10 z M 18.5,26 5.5,18 18.5,10 z"></path></g></svg>`;
-        this._slowerButton.addEventListener('click', e => {
-            if (!e.target.disabled) {
-                this._setSpeed(this._video, this._playSpeedCur - 1);
-            }
-        });
-        rightPanel.appendChild(this._slowerButton);
-
-        /**
-         * Кнопка-индикатор скорости воспроизведения.
-         * @type {HTMLButtonElement}
-         */
-        this._speedIndicatorButton = document.createElement('button');
-        this._speedIndicatorButton.classList.add('ctl-speed-indicator');
-        this._speedIndicatorButton.addEventListener('click', e => {
-            this._setSpeed(this._video, this._playSpeedDef);
-        });
-        rightPanel.appendChild(this._speedIndicatorButton);
-
-        /**
-         * Контейнер индикатора скорости воспроизведения.
-         * @type {HTMLDivElement}
-         */
-        this._speedIndicatorContent = document.createElement('div');
-        this._speedIndicatorContent.classList.add('ctl-speed-indicator-content');
-        this._speedIndicatorButton.appendChild(this._speedIndicatorContent);
-
-        /**
-         * Кнопка увелечения скорость воспроизведения. 
-         * @type {HTMLButtonElement}
-         */
-        this._fasterButton = document.createElement('button');
-        this._fasterButton.innerHTML = `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 7.5,26 20.5,18 7.5,10 z M 17.5,26 30.5,18 17.5,10 z"></path></g></svg>`
-        this._fasterButton.addEventListener('click', e => {
-            if (!e.target.disabled) {
-                this._setSpeed(this._video, this._playSpeedCur + 1);
-            }
-        });
-        rightPanel.appendChild(this._fasterButton);
-
-        /**
-         * Кнопка настроек.
-         * @type {HTMLButtonElement}
-         */
-        this._settingsButton = document.createElement('button');
-        this._settingsButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172"><g transform-origin="50%" transform="scale(0.65)"><path d="M69.28711,14.33333l-3.52734,18.08464c-5.8821,2.22427 -11.32102,5.33176 -16.097,9.25228l-17.37077,-5.99089l-16.71289,28.97461l13.89941,12.07975c-0.49282,3.02401 -0.81185,6.10305 -0.81185,9.26628c0,3.16323 0.31903,6.24227 0.81185,9.26628l-13.89941,12.07975l16.71289,28.9746l17.37077,-5.99088c4.77599,3.92052 10.2149,7.02801 16.097,9.25227l3.52734,18.08464h33.42578l3.52735,-18.08464c5.88211,-2.22427 11.32102,-5.33176 16.097,-9.25227l17.37077,5.99088l16.71289,-28.9746l-13.89941,-12.07975c0.49282,-3.02401 0.81185,-6.10305 0.81185,-9.26628c0,-3.16323 -0.31902,-6.24227 -0.81185,-9.26628l13.89941,-12.07975l-16.71289,-28.97461l-17.37077,5.99089c-4.77598,-3.92052 -10.21489,-7.02801 -16.097,-9.25228l-3.52735,-18.08464zM86,57.33333c15.83117,0 28.66667,12.8355 28.66667,28.66667c0,15.83117 -12.8355,28.66667 -28.66667,28.66667c-15.83117,0 -28.66667,-12.8355 -28.66667,-28.66667c0,-15.83117 12.8355,-28.66667 28.66667,-28.66667z"></path></g></svg>`;
-        this._settingsButton.title = 'Настройки';
-        this._settingsButton.addEventListener('click', () => {
-            // Показать/скрыть
-            const isShow = this._popupMenu.style.opacity !== '1';
-            this._showMenu(isShow);
-        });
-        rightPanel.appendChild(this._settingsButton);
-
-        /**
-         * Кнопка включения/выключения режима картинка-в-картинке.
-         * @type {HTMLButtonElement}
-         */
-        this._pipButton = document.createElement('button');
-        this._pipButton.addEventListener('click', () => {
-            if (document.pictureInPictureElement) {
-                document.exitPictureInPicture();
-            } else {
-                this._video.requestPictureInPicture();
-            }
-        });
-        rightPanel.appendChild(this._pipButton);
-
-        /**
-         * Кнопка включения/выключения полноэкранного режима.
-         * @type {HTMLButtonElement}
-         */
-        this._fullscrButton = document.createElement('button');
-        this._fullscrButton.addEventListener('click', () => {
-            if (document.fullscreen) {
-                document.exitFullscreen();
-            } else {
-                this.requestFullscreen();
-            }
-        });
-        rightPanel.appendChild(this._fullscrButton);
-
-        //#endregion ---|--- Create Right Controls Panel
-
-        //#endregion --- Create Controls
-
-        //#endregion Create Bottom Panel
-
-        //#region Create Bottom Gradient
-
-        /**
-         * @type {HTMLDivElement}
-         */
-        this._gradientBotton = document.createElement('div');
-        this._gradientBotton.classList.add('gradient-bottom', 'fade');
-        root.appendChild(this._gradientBotton);
-
-        //#endregion Create Bottom Gradient
-
-        //#region Create Video
-
-        /**
-         * Элемент Video.
-         * @type {HTMLVideoElement} 
-         */
-        this._video = document.createElement('video');
-        this._video.setAttribute('type', 'video/mp4');
-        this._video.textContent = `Тег video не поддерживается вашим браузером. Обновите браузер.`;
-        this._video.addEventListener('timeupdate', e => {
-            this._updateTime();
-
-            if (!this._isMouseDown) {
-                this._setProgressPlayPosition(this._video.currentTime);
-                this._updateScrubber();
-            }
-        });
-        this._video.addEventListener('play', () => {
-            this._updatePlayButtonState();
-        });
-        this._video.addEventListener('pause', () => {
-            this._updatePlayButtonState();
-        });
-        this._video.addEventListener('volumechange', e => {
-            this._updateVolumeButtonState();
-            /** @type {HTMLVideoElement} */
-            // @ts-ignore
-            const sender = e.currentTarget;
-            this._volumeSliderFill.style.width = sender.volume * 100 + '%';
-        });
-        this._video.addEventListener('ratechange', () => {
-            this._updateSpeedControls();
-        });
-        this._video.addEventListener('enterpictureinpicture', () => {
-            this._updatePipButtonState(true);
-        });
-        this._video.addEventListener('leavepictureinpicture', () => {
-            this._updatePipButtonState(false);
-        });
-        this._video.addEventListener('click', () => {
-            if (this._popupMenu.style.opacity !== '1') {
-                this._playButton.click();
-            }
-        });
-        this._video.addEventListener('loadstart', e => { // 1. loadstart
-            this._logger.log('load start');
-            this._spinnerShow();
-        });
-        this._video.addEventListener('durationchange', () => { // 2. durationchange
-            //this._logger.log('duration change');
-            this._updateTime();
-        });
-        this._video.addEventListener('loadedmetadata', e => { // 3. loadedmetadata 
-            this._logger.log('loaded meta data');
-        });
-        this._video.addEventListener('loadeddata', e => { // 4. loadeddata 
-            this._logger.log('loaded data');
-            this._playButton.disabled = false;
-
-            // Append Episode
+        const CRT_Root = () => {
             /**
-             * @type {HTMLBvEpisodeList} 
+             * Create Bottom Panel
+             * @returns {HTMLElement}
              */
-            //const episodeList = this.querySelector('bv-episode-list');
-            //if (episodeList !== null) {
-            //    this._removeEpisodes();
-            //    for (let i = 0; i < episodeList.children.length; i++) {
-            //        /**
-            //         * @type {HTMLBvEpisode} 
-            //         */
-            //        const episode = episodeList.children[i];
-            //        this._appendEpisode({
-            //            duration: episode.duration,
-            //            title: episode.title,
-            //        });
-            //    }
-            //}
-        });
-        this._video.addEventListener('progress', e => { // 5. progress
-            this._updateScrubber();
+            const CRT_BottomPanel = () => {
+                /**
+                 * Create Bottom Panel Wrapper
+                 * @returns {HTMLElement}
+                 */
+                const CRT_PanelWrapper = () => {
+                    /**
+                     * Create Seek Container
+                     * @returns {HTMLElement}
+                     */
+                    const CRT_SeekContainer = () => {
+                        /**
+                         * Create Hover Preview
+                         * @returns {HTMLElement}
+                         */
+                        const CRT_HoverPreview = () =>  CRT('div', {
+                            class: 'progress-hover-preview',
+                        }, hoverPreviewEl => this._hoverPreviewEl = hoverPreviewEl);
+                        /**
+                         * Create Hover Caption
+                         * @returns {HTMLElement}
+                         */
+                        const CRT_HoverCaption = () => CRT('div', {
+                            class: 'progress-hover-caption',
+                        }, hoverCaptionEl => this._hoverCaptionEl = hoverCaptionEl);
+                        /**
+                         * Create Hover Time
+                         * @returns {HTMLElement}
+                         */
+                        const CRT_HoverTime = () => CRT('div', {
+                            class: 'progress-hover-time',
+                        }, hoverTimeEl => this._hoverTimeEl = hoverTimeEl);
+                        return CRT('div', {
+                            class: 'seek-container',
+                            style: 'margin-left:50px;margin-right:auto;',
+                            children: [
+                                CRT_HoverPreview(),
+                                CRT_HoverCaption(),
+                                CRT_HoverTime(),
+                            ],
+                        });
+                    }
+                    /**
+                     * Create Progress Bar
+                     * @returns {HTMLElement}
+                     */
+                    const CRT_ProgressBar = () => {
+                        /**
+                         * Create Episode Container
+                         * @returns {HTMLElement}
+                         */
+                        const CRT_EpisodeContainer = () => {
+                            return CRT('ul', {
+                                class: 'episodes-container',
+                            }, episodesContainerEl => this._episodesContainerEl = episodesContainerEl);
+                        }
+                        /**
+                         * Create Progress Scrubber
+                         * @returns {HTMLElement}
+                         */
+                        const CRT_ProgressScrubber = () => {
+                            return CRT('div', {
+                                class: 'progress-scrubber',
+                            }, progressScrubberEl => this._progressScrubberEl = progressScrubberEl);
+                        }
+                        return CRT('div', {
+                            class: 'progress-bar',
+                            onmousedown: async e => {
+                                if (e.button === 0) {
+                                    this._isMouseDown = true;
 
-            /** @type {HTMLVideoElement} */
-            // @ts-ignore
-            const sender = e.currentTarget;
-            // const buff = sender.buffered;
-            // this._buffersSegsList.innerHTML = '';
-            // for (let i = 0; i < buff.length; i++) {
-            //     const start = buff.start(i);
-            //     const end = buff.end(i);
-            //     const x = start / sender.duration;
-            //     const w = end / sender.duration - x;
+                                    if (this._isMouseDown && !this._videoEl.paused) {
+                                        this._keepPlay = true;
+                                        this._videoEl.pause();
+                                    }
 
-            //     const li = document.createElement('li');
-            //     li.style.left = x * 100 + '%';
-            //     li.style.width = w * 100 + '%';
+                                    const hoverTime = this._getTimeByPageX(e.pageX);
+                                    if (hoverTime != null) {
+                                        this._setProgressPlayPosition(hoverTime);
+                                    }
 
-            //     this._buffersSegsList.appendChild(li);
-            // }
+                                    this._updateScrubber();
+                                }
+                            },
+                            children: [
+                                CRT_EpisodeContainer(),
+                                CRT_ProgressScrubber(),
+                            ],
+                        }, progressBarEl => this._progressBarEl = progressBarEl);
+                    }
+                    /**
+                     * Create Bottom Controls Container
+                     * @returns {HTMLElement}
+                     */
+                    const CRT_ControlsContainer = () => {
+                        /**
+                         * Create Left Controls Panel
+                         * @returns {HTMLElement}
+                         */
+                        const CRT_LetfControlsPanel = () => {
+                            /**
+                             * Create Play Button
+                             * @returns {HTMLElement}
+                             */
+                            const CRT_PlayButton = () => CRT('button', {
+                                disabled: true,
+                                onclick: async e => {
+                                    if (this._videoEl.paused) {
+                                        await this._videoEl.play();
+                                    } else {
+                                        this._videoEl.pause();
+                                        this._keepPlay = false;
+                                    }
+                                }
+                            }, playButtonEl => this._playButtonEl = playButtonEl);
+                            /**
+                             * Create Volume Control
+                             * @returns {HTMLElement}
+                             */
+                            const CRT_VolumeControl = () => {
+                                /**
+                                 * Create Volume Button
+                                 * @returns {HTMLButtonElement}
+                                 */
+                                const CRT_VolumeButton = () => CRT('button', {
+                                    onclick: () => {
+                                        this._videoEl.muted = !this._videoEl.muted;
 
-            // Спиннер при загрузке видео
-
-            switch (sender.networkState) {
-
-                case sender.NETWORK_LOADING:
-                    this._spinnerShow();
-                    break;
-
-                case sender.NETWORK_IDLE:
-                    this._spinnerHide();
-                    break;
+                                        if (this._videoEl.volume === 0) {
+                                            this._videoEl.muted = false;
+                                            this._videoEl.volume = 1;
+                                        }
+                                    },
+                                }, volumeButtonEl => this._volumeButtonEl = volumeButtonEl);
+                                /**
+                                 * Create Volume Slider
+                                 * @returns {HTMLDivElement}
+                                 */
+                                const CRT_VolumeSlider = () => {
+                                    /**
+                                     * Create Volume Slider Wrapper
+                                     * @returns {HTMLDivElement}
+                                     */
+                                    const CRT_VolumeSliderWrapper = () => {
+                                        /**
+                                         * Create Volume Slider Track
+                                         * @returns {HTMLDivElement}
+                                         */
+                                        const CRT_VolumeSliderTrack = () => {
+                                            /**
+                                             * Create Volume Slider Fill
+                                             * @returns {HTMLDivElement}
+                                             */
+                                            const CRT_VolumeSliderFill = () => {
+                                                /**
+                                                 * Create Volume Slider Thumb
+                                                 * @returns {HTMLDivElement}
+                                                 */
+                                                const CRT_VolumeSliderThumb = () => {
+                                                    return CRT('div', {
+                                                        class: 'volume-slider-thumb',
+                                                    }, volumeSliderThumbEl => this._volumeSliderThumb = volumeSliderThumbEl);
+                                                }
+                                                return CRT('div', {
+                                                    class: 'volume-slider-fill',
+                                                    children: [
+                                                        CRT_VolumeSliderThumb(),
+                                                    ],
+                                                }, volumeSliderFillEl => this._volumeSliderFillEl = volumeSliderFillEl);
+                                            }
+                                            return CRT('div', {
+                                                class: 'volume-slider-track',
+                                                children: [
+                                                    CRT_VolumeSliderFill(),
+                                                ],
+                                            });
+                                        }
+                                        return CRT('div', {
+                                            class: 'volume-slider-wrapper',
+                                            onmousemove: e => {
+                                                if (this._volumePressed) {
+                                                    this._setVolume(e);
+                                                }
+                                            },
+                                            children: [
+                                                CRT_VolumeSliderTrack(),
+                                            ],
+                                            onmousedown: e => this._setVolume(e),
+                                        });
+                                    }
+                                    return CRT('div', {
+                                        class: 'volume-slider',
+                                        title: 'Громкость',
+                                        onmousedown: () => this._volumePressed = true,
+                                        onmouseup: () => this._volumePressed = false,
+                                        onmouseleave: () => this._volumePressed = false,
+                                        children: [
+                                            CRT_VolumeSliderWrapper(),
+                                        ],
+                                    });
+                                }
+                                return CRT('div', {
+                                    class: 'volume-container',
+                                    children: [
+                                        CRT_VolumeButton(),
+                                        CRT_VolumeSlider(),
+                                    ],
+                                });
+                            }
+                            /**
+                             * Create Time Indicator
+                             * @returns {HTMLDivElement}
+                             */
+                            const CRT_TimeIndicator = () => CRT('div', {
+                                class: 'time-indicator',
+                                style: 'visibility:collapse;',
+                            }, timeIndicatorEl => this._timeIndicator = timeIndicatorEl);
+                            return CRT('div', {
+                                class: 'left-panel',
+                                children: [
+                                    CRT_PlayButton(),
+                                    CRT_VolumeControl(),
+                                    CRT_TimeIndicator(),
+                                ],
+                            });
+                        }
+                        /**
+                         * Create Left Controls Panel
+                         * @returns {HTMLDivElement}
+                         */
+                        const CRT_RightControlsPanel = () => {
+                            /**
+                             * Create Slower Speed Button
+                             * @returns {HTMLButtonElement}
+                             */
+                            const CRT_SlowerButton = () => CRT('button', {
+                                innerHTML: `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 28.5,26 15.5,18 28.5,10 z M 18.5,26 5.5,18 18.5,10 z"></path></g></svg>`,
+                                onclick: e => {
+                                    /** @type {HTMLButtonElement} */
+                                    // @ts-ignore
+                                    const sender = e.currentTarget;
+                                    if (!sender.disabled) {
+                                        this._setSpeed(this._videoEl, this._playSpeedCur - 1);
+                                    }
+                                },
+                            }, slowerButtonEl => this._slowerButtonEl = slowerButtonEl);
+                            /**
+                             * Create Speed Indicator Button
+                             * @returns {HTMLButtonElement}
+                             */
+                            const CRT_SpeedIndicatorButton = () => {
+                                /**
+                                 * Create Speed Indicator Content
+                                 * @returns {HTMLDivElement}
+                                 */
+                                const CRT_SpeedIndicatorContent = () => CRT('div', {
+                                    class: 'ctl-speed-indicator-content',
+                                }, speedIndicatorContentEl => this._speedIndicatorContentEl = speedIndicatorContentEl);
+                                return CRT('button', {
+                                    class: 'ctl-speed-indicator',
+                                    onclick: () => this._setSpeed(this._videoEl, this._playSpeedDef),
+                                    children: [
+                                        CRT_SpeedIndicatorContent(),
+                                    ],
+                                }, speedIndicatorButtonEl => this._speedIndicatorButtonEl = speedIndicatorButtonEl);
+                            }
+                            /**
+                             * Create Faster Speed Button
+                             * @returns {HTMLButtonElement}
+                             */
+                            const CRT_FasterButton = () => CRT('button', {
+                                innerHTML: `<svg viewBox="0 0 36 36"><g transform-origin="50%" transform="scale(0.9)"><path d="M 7.5,26 20.5,18 7.5,10 z M 17.5,26 30.5,18 17.5,10 z"></path></g></svg>`,
+                                onclick: e => {
+                                    /** @type {HTMLButtonElement} */
+                                    // @ts-ignore
+                                    const sender = e.currentTarget;
+                                    if (!sender.disabled) {
+                                        this._setSpeed(this._videoEl, this._playSpeedCur + 1);
+                                    }
+                                },
+                            }, fasterButtonEl => this._fasterButtonEl = fasterButtonEl);
+                            /**
+                             * Create Settings Button
+                             * @returns {HTMLButtonElement}
+                             */
+                            const CRT_SettingsButton = () => CRT('button', {
+                                innerHTML: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172"><g transform-origin="50%" transform="scale(0.65)"><path d="M69.28711,14.33333l-3.52734,18.08464c-5.8821,2.22427 -11.32102,5.33176 -16.097,9.25228l-17.37077,-5.99089l-16.71289,28.97461l13.89941,12.07975c-0.49282,3.02401 -0.81185,6.10305 -0.81185,9.26628c0,3.16323 0.31903,6.24227 0.81185,9.26628l-13.89941,12.07975l16.71289,28.9746l17.37077,-5.99088c4.77599,3.92052 10.2149,7.02801 16.097,9.25227l3.52734,18.08464h33.42578l3.52735,-18.08464c5.88211,-2.22427 11.32102,-5.33176 16.097,-9.25227l17.37077,5.99088l16.71289,-28.9746l-13.89941,-12.07975c0.49282,-3.02401 0.81185,-6.10305 0.81185,-9.26628c0,-3.16323 -0.31902,-6.24227 -0.81185,-9.26628l13.89941,-12.07975l-16.71289,-28.97461l-17.37077,5.99089c-4.77598,-3.92052 -10.21489,-7.02801 -16.097,-9.25228l-3.52735,-18.08464zM86,57.33333c15.83117,0 28.66667,12.8355 28.66667,28.66667c0,15.83117 -12.8355,28.66667 -28.66667,28.66667c-15.83117,0 -28.66667,-12.8355 -28.66667,-28.66667c0,-15.83117 12.8355,-28.66667 28.66667,-28.66667z"></path></g></svg>`,
+                                title: 'Настройки',
+                                onclick: () => {
+                                    // Показать/скрыть
+                                    const isShow = this._popupMenuEl.style.opacity !== '1';
+                                    this._showMenu(isShow);
+                                },
+                            }, settingsButtonEl => this._settingsButtonEl = settingsButtonEl);
+                            /**
+                             * Create Picture-In-Picture Button
+                             * @returns {HTMLButtonElement}
+                             */
+                            const CRT_PipButton = () => CRT('button', {
+                                onclick: () => {
+                                    if (document.pictureInPictureElement) {
+                                        document.exitPictureInPicture();
+                                    } else {
+                                        this._videoEl.requestPictureInPicture();
+                                    }
+                                },
+                            }, pipButtonEl => this._pipButtonEl = pipButtonEl);
+                            /**
+                             * Create Fullscreen Button
+                             * @returns {HTMLButtonElement}
+                             */
+                            const CRT_FullscrButton = () => CRT('button', {
+                                onclick: () => {
+                                    if (document.fullscreenEnabled) {
+                                        document.exitFullscreen();
+                                    } else {
+                                        this.requestFullscreen();
+                                    }
+                                },
+                            }, fullscrButtonEl => this._fullscrButtonEl = fullscrButtonEl);
+                            return CRT('div', {
+                                class: 'right-panel',
+                                children: [
+                                    CRT_SlowerButton(),
+                                    CRT_SpeedIndicatorButton(),
+                                    CRT_FasterButton(),
+                                    CRT_SettingsButton(),
+                                    CRT_PipButton(),
+                                    CRT_FullscrButton(),
+                                ],
+                            });
+                        }
+                        return CRT('div', {
+                            class: 'controls-container',
+                            children: [
+                                CRT_LetfControlsPanel(),
+                                CRT_RightControlsPanel(),
+                            ],
+                        });
+                    }
+                    return CRT('div', {
+                        class: 'panel-wrapper',
+                        children: [
+                            //CRT_SeekContainer(),
+                            CRT_ProgressBar(),
+                            CRT_ControlsContainer(),
+                        ],
+                    });
+                }
+                return CRT('div', {
+                    class: 'panel-bottom fade',
+                    children: [
+                        CRT_PanelWrapper(),
+                    ],
+                }, panelBottonEl => this._panelBottonEl = panelBottonEl);
             }
+            /**
+             * Create Bottom Gradient
+             * @returns {HTMLDivElement}
+             */
+            const CRT_BottomGradient = () => CRT('div', {
+                class: 'gradient-bottom fade',
+            }, gradientBottonEl => this._gradientBottonEl = gradientBottonEl);
+            /**
+             * Create Video
+             * @returns {HTMLVideoElement}
+             */
+            const CRT_Video = () => {
+                return CRT('video', {
+                    type: 'video/mp4',
+                    textContent: 'Тег video не поддерживается вашим браузером. Обновите браузер.',
+                    ontimeupdate: () => {
+                        this._updateTime();
 
-            let networkState;
-            switch (sender.networkState) {
-                case 0:
-                    networkState = 'NETWORK_EMPTY';
-                    break;
-                case 1:
-                    networkState = 'NETWORK_IDLE';
-                    break;
-                case 2:
-                    networkState = 'NETWORK_LOADING';
-                    break;
-                case 3:
-                    networkState = 'NETWORK_NO_SOURCE';
-                    break;
+                        if (!this._isMouseDown) {
+                            this._setProgressPlayPosition(this._videoEl.currentTime);
+                            this._updateScrubber();
+                        }
+                    },
+                    onplay: () => this._updatePlayButtonState(),
+                    onpause: () => this._updatePlayButtonState(),
+                    onvolumechange: e => {
+                        this._updateVolumeButtonState();
+                        /** @type {HTMLVideoElement} */
+                        // @ts-ignore
+                        const sender = e.currentTarget;
+                        this._volumeSliderFillEl.style.width = sender.volume * 100 + '%';
+                    },
+                    onratechange: () => this._updateSpeedControls(),
+                    onenterpictureinpicture: () => this._updatePipButtonState(true),
+                    onleavepictureinpicture: () => this._updatePipButtonState(false),
+                    onclick: () => {
+                        if (this._popupMenuEl.style.opacity !== '1') {
+                            this._playButtonEl.click();
+                        }
+                    },
+                    // 1. loadstart
+                    onloadstart: () => {
+                        this._logger.log('load start');
+                        this._spinnerShow();
+                    },
+                    // 2. durationchange
+                    ondurationchange: () => {
+                        //this._logger.log('duration change');
+                        this._updateTime();
+                    },
+                    // 3. loadedmetadata 
+                    onloadedmetadata: () => {
+                        this._logger.log('loaded meta data');
+                    },
+                    // 4. loadeddata
+                    onloadeddata: () => {
+                        this._logger.log('loaded data');
+                        this._playButtonEl.disabled = false;
+            
+                        // Append Episode
+                        /**
+                         * @type {HTMLBvEpisodeList} 
+                         */
+                        //const episodeList = this.querySelector('bv-episode-list');
+                        //if (episodeList !== null) {
+                        //    this._removeEpisodes();
+                        //    for (let i = 0; i < episodeList.children.length; i++) {
+                        //        /**
+                        //         * @type {HTMLBvEpisode} 
+                        //         */
+                        //        const episode = episodeList.children[i];
+                        //        this._appendEpisode({
+                        //            duration: episode.duration,
+                        //            title: episode.title,
+                        //        });
+                        //    }
+                        //}
+                    },
+                    // 5. progress
+                    onprogress: e => {
+                        this._updateScrubber();
+
+                        /** @type {HTMLVideoElement} */
+                        // @ts-ignore
+                        const sender = e.currentTarget;
+                        // const buff = sender.buffered;
+                        // this._buffersSegsList.innerHTML = '';
+                        // for (let i = 0; i < buff.length; i++) {
+                        //     const start = buff.start(i);
+                        //     const end = buff.end(i);
+                        //     const x = start / sender.duration;
+                        //     const w = end / sender.duration - x;
+            
+                        //     const li = document.createElement('li');
+                        //     li.style.left = x * 100 + '%';
+                        //     li.style.width = w * 100 + '%';
+            
+                        //     this._buffersSegsList.appendChild(li);
+                        // }
+            
+                        // Спиннер при загрузке видео
+            
+                        switch (sender.networkState) {
+            
+                            case sender.NETWORK_LOADING:
+                                this._spinnerShow();
+                                break;
+            
+                            case sender.NETWORK_IDLE:
+                                this._spinnerHide();
+                                break;
+                        }
+            
+                        let networkState;
+                        switch (sender.networkState) {
+                            case 0:
+                                networkState = 'NETWORK_EMPTY';
+                                break;
+                            case 1:
+                                networkState = 'NETWORK_IDLE';
+                                break;
+                            case 2:
+                                networkState = 'NETWORK_LOADING';
+                                break;
+                            case 3:
+                                networkState = 'NETWORK_NO_SOURCE';
+                                break;
+                        }
+            
+                        let readyState;
+                        switch (sender.readyState) {
+                            case 0:
+                                readyState = 'HAVE_NOTHING';
+                                break;
+                            case 1:
+                                readyState = 'HAVE_METADATA';
+                                break;
+                            case 2:
+                                readyState = 'HAVE_CURRENT_DATA';
+                                break;
+                            case 3:
+                                readyState = 'HAVE_FUTURE_DATA';
+                                break;
+                            case 4:
+                                readyState = 'HAVE_ENOUGH_DATA';
+                                break;
+                        }
+            
+                        this._logger.log(`progress: network ${networkState} / ready ${readyState}`);
+                    },
+                    // 6. canplay
+                    oncanplay: () => {
+                        //this._logger.log('can play');
+                        this._spinnerHide();
+                    },
+                    // 7. canplaythrough
+                    oncanplaythrough: () => {
+                        //this._logger.log('can play through');
+                    },
+                    onerror: e => {
+                        /** @type {HTMLVideoElement} */
+                        // @ts-ignore
+                        const sender = e.currentTarget;
+
+                        this._spinnerHide();
+
+                        /** @type {HTMLDivElement} */
+                        const block = document.createElement('div');
+                        block.textContent = 'Источник видео не найден';
+                        block.style.position = 'absolute';
+                        block.style.left = '50%';
+                        block.style.top = '50%';
+                        block.style.transform = 'translateX(-50%) translateY(-50%)';
+                        block.style.border = '2px solid red';
+                        block.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+                        block.style.color = 'white';
+                        block.style.fontSize = '2rem';
+                        block.style.padding = '20px';
+                        this.appendChild(block);
+
+                        let err;
+                        switch (sender.error.code) {
+                            case 1:
+                                err = 'MEDIA_ERR_ABORTED';
+                                break;
+                            case 2:
+                                err = 'MEDIA_ERR_NETWORK';
+                                break;
+                            case 3:
+                                err = 'MEDIA_ERR_DECODE';
+                                break;
+                            case 4:
+                                err = 'MEDIA_ERR_SRC_NOT_SUPPORTED';
+                                break;
+                        }
+
+                        this._logger.error(`${sender.error.code} ${err} - ${sender.error.message}`);
+                    },
+                }, videoEl => this._videoEl = videoEl);
             }
-
-            let readyState;
-            switch (sender.readyState) {
-                case 0:
-                    readyState = 'HAVE_NOTHING';
-                    break;
-                case 1:
-                    readyState = 'HAVE_METADATA';
-                    break;
-                case 2:
-                    readyState = 'HAVE_CURRENT_DATA';
-                    break;
-                case 3:
-                    readyState = 'HAVE_FUTURE_DATA';
-                    break;
-                case 4:
-                    readyState = 'HAVE_ENOUGH_DATA';
-                    break;
+            /**
+             * Create Spinner
+             * @returns {HTMLElement}
+             */
+            const CRT_SpinnerWrapper = () => {
+                const svgNS = 'http://www.w3.org/2000/svg';
+                // SVG
+                const spinnerWrapperEl = document.createElementNS(svgNS, 'svg');
+                spinnerWrapperEl.setAttribute('viewBox', '0 0 50 50');
+                spinnerWrapperEl.classList.add('spinner');
+                // Circle
+                const circle = document.createElementNS(svgNS, 'circle');
+                circle.setAttribute('cx', '25');
+                circle.setAttribute('cy', '25');
+                circle.setAttribute('r', '20');
+                circle.setAttribute('fill', 'none');
+                circle.setAttribute('stroke-width', '5');
+                spinnerWrapperEl.appendChild(circle);
+                // ----
+                this._spinnerWrapperEl = spinnerWrapperEl;
+                // @ts-ignore
+                return spinnerWrapperEl;
             }
+            return CRT('fragment', {
+                children: [
+                    CRT_ImportStylesheet('../src/styles.css'),
+                    CRT_BottomPanel(),
+                    //CRT_BottomGradient(),
+                    CRT_Video(),
+                    //CRT_SpinnerWrapper(),
+                ],
+            });
+        }
 
-            this._logger.log(`progress: network ${networkState} / ready ${readyState}`);
-        });
-        this._video.addEventListener('canplay', e => { // 6. canplay
-            //this._logger.log('can play');
-            this._spinnerHide();
-        });
-        this._video.addEventListener('canplaythrough', e => { // 7. canplaythrough 
-            //this._logger.log('can play through');
-        });
-        this._video.addEventListener('error', e => {
-            /** @type {HTMLVideoElement} */
-            // @ts-ignore
-            const sender = e.currentTarget;
+        shadow.appendChild(CRT_Root());
 
-            this._spinnerHide();
-
-            const block = document.createElement('div');
-            block.textContent = 'Источник видео не найден';
-            block.style.position = 'absolute';
-            block.style.left = '50%';
-            block.style.top = '50%';
-            block.style.transform = 'translateX(-50%) translateY(-50%)';
-            block.style.border = '2px solid red';
-            block.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
-            block.style.color = 'white';
-            block.style.fontSize = '2rem';
-            block.style.padding = '20px';
-            root.appendChild(block);
-
-            let err;
-            switch (sender.error.code) {
-                case 1:
-                    err = 'MEDIA_ERR_ABORTED';
-                    break;
-                case 2:
-                    err = 'MEDIA_ERR_NETWORK';
-                    break;
-                case 3:
-                    err = 'MEDIA_ERR_DECODE';
-                    break;
-                case 4:
-                    err = 'MEDIA_ERR_SRC_NOT_SUPPORTED';
-                    break;
-            }
-
-            this._logger.error(`${sender.error.code} ${err} - ${sender.error.message}`);
-        });
-        root.appendChild(this._video);
-
-        //#endregion Create Video
-
-        debugger
-
-        this._appendEpisode();
-
-        //#region Create Load Spinner
-
-        const svgNS = 'http://www.w3.org/2000/svg';
-
-        /**
-         * Спинер загрузки.
-         * @type {SVGSVGElement}
-         */
-        this._spinnerWrapper = document.createElementNS(svgNS, 'svg');
-        this._spinnerWrapper.setAttribute('viewBox', '0 0 50 50');
-        this._spinnerWrapper.classList.add('spinner');
-
-        const circle = document.createElementNS(svgNS, 'circle');
-        circle.setAttribute('cx', '25');
-        circle.setAttribute('cy', '25');
-        circle.setAttribute('r', '20');
-        circle.setAttribute('fill', 'none');
-        circle.setAttribute('stroke-width', '5');
-        this._spinnerWrapper.appendChild(circle);
-
-        root.appendChild(this._spinnerWrapper);
-
-        this._spinnerHide();
-
-        //#endregion Create Load Spinner
-
-        // Add to DOM
-        shadow.appendChild(root);
+        const CRT_PopupMenu = () => {
+            /**
+             * Create Popup Menu Items List
+             * @returns {HTMLUListElement}
+             */
+            const CRT_MenuList = () => CRT('ul');
+            return CRT('div', {
+                class: 'menu',
+                children: [
+                    CRT_MenuList(),
+                ],
+            }, popupMenuEl => this._popupMenuEl = popupMenuEl);
+        }
 
         this._isInitialized = true;
     }
@@ -1561,48 +1825,60 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {HTMLLIElement}
      */
     createMenuItem(value, html) {
-        const iconDiv = document.createElement('div');
-        iconDiv.classList.add('menu-item-icon');
-        iconDiv.style.visibility = 'hidden';
-        iconDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172"><path d="M145.43294,37.93294l-80.93294,80.93295l-30.76628,-30.76628l-10.13411,10.13411l40.90039,40.90039l91.06706,-91.06705z"></path></svg>`;
-
-        const textDiv = document.createElement('div');
-        textDiv.classList.add('menu-item-body');
-        textDiv.innerHTML = html;
-
-        const li = document.createElement('li');
-        li.setAttribute('data-value', value);
-        li.addEventListener('click', e => {
-            this._showMenu(false);
-
-            /** @type {HTMLLIElement} */
-            // @ts-ignore
-            const sender = e.currentTarget;
-
-            /** @type {string} */
-            const value = sender.getAttribute('data-value');
-
-            if (this._curParValue === value) {
-                return;
-            }
-
-            this._curParValue = value;
-
-            this._updateMenu();
-
-            // устанавливаем новое качество
-            const curTime = this._video.currentTime;
-            const isPaused = this._video.paused;
-            this._video.src = `${this._src}?${this._param}=${this._curParValue}`;
-            this._video.currentTime = curTime;
-            if (!isPaused) {
-                this._video.play();
-            }
+        /**
+         * Create Menu Item Icon
+         * @returns {HTMLDivElement}
+         */
+        const CRT_Icon = () => CRT('div', {
+            class: 'menu-item-icon',
+            style: 'visibility:hidden;',
+            innerHTML: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172"><path d="M145.43294,37.93294l-80.93294,80.93295l-30.76628,-30.76628l-10.13411,10.13411l40.90039,40.90039l91.06706,-91.06705z"></path></svg>`,
         });
 
-        li.appendChild(iconDiv);
-        li.appendChild(textDiv);
-        return li;
+        /**
+         * Create Menu Item Text
+         * @returns {HTMLDivElement}
+         */
+        const CRT_Text = () => CRT('div', {
+            class: 'menu-item-body',
+            innerHTML: html,
+        });
+
+        debugger
+        return CRT('li', {
+            'data-value': value,
+            onclick: e => {
+                this._showMenu(false);
+
+                /** @type {HTMLLIElement} */
+                // @ts-ignore
+                const sender = e.currentTarget;
+    
+                /** @type {string} */
+                const value = sender.getAttribute('data-value');
+    
+                if (this._curParValue === value) {
+                    return;
+                }
+    
+                this._curParValue = value;
+    
+                this._updateMenu();
+    
+                // устанавливаем новое качество
+                const curTime = this._videoEl.currentTime;
+                const isPaused = this._videoEl.paused;
+                this._videoEl.src = `${this._src}?${this._param}=${this._curParValue}`;
+                this._videoEl.currentTime = curTime;
+                if (!isPaused) {
+                    this._videoEl.play();
+                }
+            },
+            children: [
+                CRT_Icon(),
+                CRT_Text(),
+            ],
+        });
     }
 
     //#endregion Create Functions
@@ -1613,62 +1889,85 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _appendEpisode(episodeData) {
-        if (typeof episodeData !== 'undefined' && isNaN(this._video.duration)) {
+        if (typeof episodeData !== 'undefined'
+            && isNaN(this._videoEl.duration)) {
             console.error(`Duration is NaN.`);
             return;
         }
 
-        const item = document.createElement('li');
+        /** @type {HTMLLIElement} */
+        const item = CRT('li');
+
+        /** @type {boolean} */
+        const hasData = typeof episodeData !== 'undefined';
 
         // Title
-        if (typeof episodeData !== 'undefined' &&
-            typeof episodeData.title === 'string' &&
-            episodeData.title !== null &&
-            episodeData.title.length > 0) {
+
+        /** @type {boolean} */
+        const hasTitle = typeof episodeData.title === 'string'
+            && episodeData.title !== null
+            && episodeData.title.length > 0;
+
+        if (hasData && hasTitle) {
             item.setAttribute('data-title', episodeData.title);
         }
 
         // Duration
-        let duration = this._video.duration;
-        if (typeof episodeData !== 'undefined' &&
-            typeof episodeData.duration === 'number' &&
-            episodeData.duration !== null && 
-            episodeData.duration >= 0) {
+
+        /** @type {number} */
+        let duration = this._videoEl.duration;
+        /** @type {boolean} */
+        const hasDuration = typeof episodeData.duration === 'number'
+            && episodeData.duration !== null
+            && episodeData.duration >= 0;
+
+        if (hasData && hasDuration) {
             if (episodeData.duration < 0) {
                 console.error('Duration out of range');
             } else {
                 duration = episodeData.duration;
             }
-        } 
-        item.style.width = (duration / this._video.duration) * 100 + '%';
+        }
+        item.style.width = (duration / this._videoEl.duration) * 100 + '%';
 
-        // Wrapper
-        const episodeWrapper = document.createElement('div');
-        episodeWrapper.classList.add('episode-wrapper');
+        /**
+         * Create Episode List Sub Items
+         * @returns {HTMLUListElement}
+         */
+        const CRT_EpisodeList = () => CRT('ul', {
+            class: 'episode-list',
+            children: [
+                CRT('li', {
+                    class: 'episode-load',
+                }),
+                CRT('li', {
+                    class: 'episode-hover',
+                }),
+                CRT('li', {
+                    class: 'episode-play',
+                }),
+            ],
+        });
+
+        /**
+         * Create Episode Padding
+         * @returns {HTMLDivElement}
+         */
+        const CRT_EpisodePadding = () => CRT('div', {
+            class: 'episode-padding',
+        });
+
+        /** @type {HTMLDivElement} */
+        const episodeWrapper = CRT('div', {
+            class: 'episode-wrapper',
+            children: [
+                CRT_EpisodeList(),
+                CRT_EpisodePadding(),
+            ],
+        });
         item.appendChild(episodeWrapper);
 
-        // Sub Items
-        const list = document.createElement('ul');
-        list.classList.add('episode-list');
-        episodeWrapper.appendChild(list);
-
-        const load = document.createElement('li');
-        load.classList.add('episode-load');
-        list.appendChild(load);
-
-        const hover = document.createElement('li');
-        hover.classList.add('episode-hover');
-        list.appendChild(hover);
-
-        const play = document.createElement('li');
-        play.classList.add('episode-play');
-        list.appendChild(play);
-
-        const padding = document.createElement('div');
-        padding.classList.add('episode-padding');
-        episodeWrapper.appendChild(padding);
-
-        this._episodesContainer.appendChild(item);
+        this._episodesContainerEl.appendChild(item);
     }
 
     /**
@@ -1676,8 +1975,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _removeEpisodes() {
-        while (this._episodesContainer.children.length > 0) {
-            this._episodesContainer.children[0].remove();
+        while (this._episodesContainerEl.children.length > 0) {
+            this._episodesContainerEl.children[0].remove();
         }
     }
 
@@ -1688,8 +1987,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     appendEpisodes(episodeInfos) {
         // remove
-        while (this._episodesContainer.children.length > 0) {
-            this._episodesContainer.children[0].remove();
+        while (this._episodesContainerEl.children.length > 0) {
+            this._episodesContainerEl.children[0].remove();
         }
 
         // append
@@ -1697,8 +1996,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
             this._appendEpisode();
         } else {
             for (let i = 0; i < episodeInfos.length; i++) {
+                /** @type {EpisodeInfo} */
                 const episodeData = episodeInfos[i];
-
                 this._appendEpisode(episodeData);
             }
         }

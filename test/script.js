@@ -12,7 +12,7 @@ document.querySelector('#episodeClear').addEventListener('click', e => {
 document.querySelector('#episodeAdd').addEventListener('click', e => {
     const episode = {
         title: document.querySelector('#episodeTitle').value,
-        duration: (document.querySelector('#episodeDuration').value / 100) * player._video.duration,
+        duration: (document.querySelector('#episodeDuration').value / 100) * player._videoEl.duration,
     };
 
     episodes.push(episode);

@@ -15,7 +15,7 @@ class BvLogger {
 
 
         if (isPrint) {
-            const format = [this.name, '::'];
+            const format = [new Date().toISOString(), '::', this.name, '::'];
             this.log = console.log.bind(window.console, ...format);
             //this.debug = console.log.bind(window.console, ...format);
             //this.warm = console.warm.bind(window.console, format);

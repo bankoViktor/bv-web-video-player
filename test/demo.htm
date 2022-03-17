@@ -8,23 +8,26 @@
   <body>
 
     <div class="block-for-video">
-      <bv-video-player src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" speed-controls hotkey>
-
-        <bv-quality-list>
-          <bv-quality value="1080">1080p <sup class="qsup">FHD</sup></bv-quality>
-          <bv-quality value="720">720p <sup class="qsup">HD</sup></bv-quality>
-          <bv-quality value="480">480p</bv-quality>
-        </bv-quality-list>
-
-        <bv-episode-list>
-          <bv-episode duration="30" title="Введение"></bv-episode>
-          <bv-episode duration="300" title="Короткое название эпизода"></bv-episode>
-          <bv-episode duration="221" title="Пример очень длинного названия текущего эпизода"></bv-episode>
-          <bv-episode duration="45" title="Заключение"></bv-episode>
-        </bv-episode-list>
-
+      <bv-video-player 
+        src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        speed-controls
+        hotkey
+        >
       </bv-video-player>
     </div>
+
+    <!-- <bv-quality-list>
+      <bv-quality value="1080">1080p <sup class="qsup">FHD</sup></bv-quality>
+      <bv-quality value="720">720p <sup class="qsup">HD</sup></bv-quality>
+      <bv-quality value="480">480p</bv-quality>
+    </bv-quality-list>
+
+    <bv-episode-list>
+      <bv-episode duration="30" title="Введение"></bv-episode>
+      <bv-episode duration="300" title="Короткое название эпизода"></bv-episode>
+      <bv-episode duration="221" title="Пример очень длинного названия текущего эпизода"></bv-episode>
+      <bv-episode duration="45" title="Заключение"></bv-episode>
+    </bv-episode-list> -->
 
     <div class="group" data-title="Episodes:">
       <button id="episodeClear">Clear Episodes</button>
@@ -34,7 +37,12 @@
     </div>
 
     <script src="../src/BvLogger.js"></script>
-    <script src="../src/"></script>
-    <script src="dist/index.js"></script>
+    <script src="../src/Tools.js"></script>
+    <script src="../src/Factory.js"></script>
+    <script src="../src/HTMLBvEpisode.js"></script>
+    <script src="../src/HTMLBvEpisodeList.js"></script>
+    <script src="../src/HTMLBvQuality.js"></script>
+    <script src="../src/HTMLBvQualityList.js"></script>
+    <script src="../src/HTMLBvVideoPlayer.js"></script>
   </body>
 </html>
