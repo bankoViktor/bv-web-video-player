@@ -242,7 +242,7 @@ li.episode-hover {
     display: flex;
 }
 
-.left-panel {
+.panel-bottom-left {
     flex-grow: 1;
 }
 
@@ -424,7 +424,7 @@ li.episode-hover {
 }
 
 /* POPUP MENU */
-
+/*
 .menu {
     position: absolute;
     right: 10px;
@@ -474,9 +474,9 @@ li.episode-hover {
 .hide {
     visibility: hidden;
 }
-
+*/
 /* LOADER */
-
+/*
 .spinner {
     animation: rotate 2s linear infinite;
     z-index: 2;
@@ -516,5 +516,5 @@ li.episode-hover {
         stroke-dashoffset: -124;
     }
 }
-
+*/
 /* END OF FILE */

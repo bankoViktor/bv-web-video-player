@@ -168,19 +168,155 @@ class HTMLBvVideoPlayer extends HTMLElement {
          */
         this._moveTimer = null;
 
+        //#endregion Properties
+        
+        //#region Elements
+
         /**
          * Элемент нижней панели.
          * @type {HTMLDivElement}
          */
-        this._panelBottonEl = null;
+         this._panelBottonEl = null;
 
-        /**
-         * Всплывающее меню настроек.
-         * @type {HTMLDivElement} 
-         */
+         /**
+          * Всплывающее меню настроек.
+          * @type {HTMLDivElement} 
+          */
         this._popupMenuEl = null;
 
-        //#endregion Properties
+        /**
+         * Контейнер всплывающего контейнера с превью и временем.
+         * @type {HTMLDivElement}
+         */
+        this._seekContainerEl = null;
+
+        /**
+         * Миниатюра.
+         * @type {HTMLDivElement}
+         */
+        this._hoverPreviewEl = null;;
+
+        /**
+         * Название эпизода.
+         * @type {HTMLDivElement}
+         */
+        this._hoverCaptionEl = null;
+
+        /**
+         * Время.
+         * @type {HTMLDivElement}
+         */
+        this._hoverTimeEl = null;
+
+        /**
+         * Прогресс бар. Содержит список эпизодов и ползунок.
+         * @type {HTMLDivElement}
+         */
+        this._progressBarEl = null;
+
+        /**
+         * Список эпизодов.
+         * @type {HTMLUListElement}
+         */
+        this._episodesContainerEl = null;
+
+        /**
+         * Красная точка на прогресс-баре.
+         * @type {HTMLDivElement}
+         */
+        this._progressScrubberEl = null;
+
+        /**
+         * Кнопка воспроизведения/остановка.
+         * @type {HTMLButtonElement}
+         */
+        this._playButtonEl = null;
+
+        /**
+         * Кнопка выключения/включения звука.
+         * @type {HTMLButtonElement}
+         */
+        this._volumeButtonEl = null;
+ 
+        /**
+         * Полоса заполнения, отображает уровень громкости. 
+         * @type {HTMLDivElement}
+         */
+        this._volumeSliderFillEl = null;
+
+        /**
+         * Движок контрола уровеня громкости.
+         * @type { HTMLDivElement }
+         */
+        this._volumeSliderThumb = null;
+ 
+        /**
+         * Индекатор времени.
+         * @type {HTMLSpanElement}
+         */
+        this._timeIndicator = null;
+
+        /**
+         * Кнопка уменьшения скорость воспроизведения.
+         * @type {HTMLButtonElement}
+         */
+        this._slowerButtonEl = null;
+
+        /**
+         * Кнопка-индикатор скорости воспроизведения.
+         * @type {HTMLButtonElement}
+         */
+        this._speedIndicatorButtonEl = null;
+
+        /**
+         * Контейнер индикатора скорости воспроизведения.
+         * @type {HTMLDivElement}
+         */
+        this._speedIndicatorContentEl = null;
+
+        /**
+         * Кнопка увелечения скорость воспроизведения. 
+         * @type {HTMLButtonElement}
+         */
+        this._fasterButtonEl = null;
+
+        /**
+         * Кнопка настроек.
+         * @type {HTMLButtonElement}
+         */
+        this._settingsButtonEl = null;
+
+        /**
+         * Кнопка включения/выключения режима картинка-в-картинке.
+         * @type {HTMLButtonElement}
+         */
+        this._pipButtonEl = null;
+
+        /**
+         * Кнопка включения/выключения полноэкранного режима.
+         * @type {HTMLButtonElement}
+         */
+        this._fullscrButtonEl = null;
+        
+        /**
+         * Bottom Gradient
+         * @type {HTMLDivElement}
+         */
+        this._gradientBottonEl = null;
+
+        /**
+         * Элемент Video.
+         * @type {HTMLVideoElement} 
+         */
+        this._videoEl = null;
+
+        /**
+         * Спинер загрузки.
+         * @type {SVGSVGElement}
+         */
+        this._spinnerWrapperEl = null;
+
+        //#endregion Elements
 
         //#region Window Events Handlers
 
@@ -471,142 +607,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
         });
 
         //#endregion This Events
-
-        /**
-         * Контейнер всплывающего контейнера с превью и временем.
-         * @type {HTMLDivElement}
-         */
-        this._seekContainerEl = null;
-
-        /**
-         * Миниатюра.
-         * @type {HTMLDivElement}
-         */
-        this._hoverPreviewEl = null;;
-
-        /**
-         * Название эпизода.
-         * @type {HTMLDivElement}
-         */
-        this._hoverCaptionEl = null;
-
-        /**
-         * Время.
-         * @type {HTMLDivElement}
-         */
-        this._hoverTimeEl = null;
-
-        /**
-         * Прогресс бар. Содержит список эпизодов и ползунок.
-         * @type {HTMLDivElement}
-         */
-        this._progressBarEl = null;
-
-        /**
-         * Список эпизодов.
-         * @type {HTMLUListElement}
-         */
-        this._episodesContainerEl = null;
-
-        /**
-         * Красная точка на прогресс-баре.
-         * @type {HTMLDivElement}
-         */
-        this._progressScrubberEl = null;
-
-        /**
-         * Кнопка воспроизведения/остановка.
-         * @type {HTMLButtonElement}
-         */
-        this._playButtonEl = null;
-
-        /**
-         * Кнопка выключения/включения звука.
-         * @type {HTMLButtonElement}
-         */
-        this._volumeButtonEl = null;
- 
-        /**
-         * Полоса заполнения, отображает уровень громкости. 
-         * @type {HTMLDivElement}
-         */
-        this._volumeSliderFillEl = null;
-
-        /**
-         * Движок контрола уровеня громкости.
-         * @type { HTMLDivElement }
-         */
-        this._volumeSliderThumb = null;
- 
-        /**
-         * Индекатор времени.
-         * @type {HTMLSpanElement}
-         */
-        this._timeIndicator = null;
-
-        /**
-         * Кнопка уменьшения скорость воспроизведения.
-         * @type {HTMLButtonElement}
-         */
-        this._slowerButtonEl = null;
-
-        /**
-         * Кнопка-индикатор скорости воспроизведения.
-         * @type {HTMLButtonElement}
-         */
-        this._speedIndicatorButtonEl = null;
-
-        /**
-         * Контейнер индикатора скорости воспроизведения.
-         * @type {HTMLDivElement}
-         */
-        this._speedIndicatorContentEl = null;
-
-        /**
-         * Кнопка увелечения скорость воспроизведения. 
-         * @type {HTMLButtonElement}
-         */
-        this._fasterButtonEl = null;
-
-        /**
-         * Кнопка настроек.
-         * @type {HTMLButtonElement}
-         */
-        this._settingsButtonEl = null;
-
-        /**
-         * Кнопка включения/выключения режима картинка-в-картинке.
-         * @type {HTMLButtonElement}
-         */
-        this._pipButtonEl = null;
-
-        /**
-         * Кнопка включения/выключения полноэкранного режима.
-         * @type {HTMLButtonElement}
-         */
-        this._fullscrButtonEl = null;
-        
-        /**
-         * Bottom Gradient
-         * @type {HTMLDivElement}
-         */
-        this._gradientBottonEl = null;
-
-        //#region Create Video
-
-        /**
-         * Элемент Video.
-         * @type {HTMLVideoElement} 
-         */
-        this._videoEl = null;
-
-        /**
-         * Спинер загрузки.
-         * @type {SVGSVGElement}
-         */
-        this._spinnerWrapperEl = null;
-
-        //#endregion Elements
 
         this._logger.log('constructor');
     }

@@ -10,10 +10,12 @@ document.querySelector('#episodeClear').addEventListener('click', e => {
     episodes.length = 0;
 });
 
-document.querySelector('#episodeAdd').addEventListener('click', e => {
+document.querySelector('#episodeAdd').addEventListener('click', () => {
     /** @type {EpisodeInfo} */
     const episode = {
+        // @ts-ignore
         title: document.querySelector('#episodeTitle')?.value,
+        // @ts-ignore
         duration: (document.querySelector('#episodeDuration').value / 100) * player._videoEl.duration,
     };
 
