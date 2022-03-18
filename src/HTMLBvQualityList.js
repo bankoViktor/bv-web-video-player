@@ -41,6 +41,8 @@ class HTMLBvQualityList extends HTMLElement {
                 action: 'added',
                 element: newQuality,
             };
+
+            /** @type {CustomEvent} */
             const event = new CustomEvent('qualitylist-changed', {
                 detail: options,
                 cancelable: false,
@@ -63,6 +65,8 @@ class HTMLBvQualityList extends HTMLElement {
                 action: 'removed',
                 element: removeQuality,
             };
+
+            /** @type {CustomEvent} */
             const event = new CustomEvent(BV_QUALITY_LIST_CHANGED_EVENT_NAME, {
                 detail: options,
                 cancelable: false,
@@ -83,6 +87,8 @@ class HTMLBvQualityList extends HTMLElement {
                 action: 'modified',
                 element: changedQuality,
             };
+
+            /** @type {CustomEvent} */
             const event = new CustomEvent(BV_QUALITY_LIST_CHANGED_EVENT_NAME, {
                 detail: options,
                 cancelable: false,

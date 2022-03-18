@@ -31,6 +31,8 @@ class HTMLBvEpisodeList extends HTMLElement {
                 action: 'added',
                 element: newEpisode,
             };
+
+            /** @type {CustomEvent} */
             const event = new CustomEvent(BV_EPISODE_LIST_CHANGED_EVENT_NAME, {
                 detail: options,
                 cancelable: false,
@@ -53,6 +55,8 @@ class HTMLBvEpisodeList extends HTMLElement {
                 action: 'removed',
                 element: removeEpisode,
             };
+
+            /** @type {CustomEvent} */
             const event = new CustomEvent(BV_EPISODE_LIST_CHANGED_EVENT_NAME, {
                 detail: options,
                 cancelable: false,
@@ -73,6 +77,8 @@ class HTMLBvEpisodeList extends HTMLElement {
                 action: 'modified',
                 element: changedEpisode,
             };
+
+            /** @type {CustomEvent} */
             const event = new CustomEvent(BV_EPISODE_LIST_CHANGED_EVENT_NAME, {
                 detail: options,
                 cancelable: false,
@@ -144,7 +150,7 @@ class HTMLBvEpisodeList extends HTMLElement {
             if (title === episode.title) {
                 episode.remove();
                 break;
-        }
+            }
         }
     }
 
@@ -154,7 +160,7 @@ class HTMLBvEpisodeList extends HTMLElement {
      * @returns {void}
      */
     appendEpisode(episodeInfo) {
-
+        // TODO appendEpisode
     }
 
 }

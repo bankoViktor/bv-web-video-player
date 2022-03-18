@@ -5,8 +5,30 @@ const BV_VIDEO_PLAYER_SOURCE_ATTRIBUTE_NAME = 'src';
 const BV_VIDEO_PLAYER_PARAM_ATTRIBUTE_NAME = 'param';
 const BV_VIDEO_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME = 'speed-control';
 const BV_VIDEO_PLAYER_HOTKEY_ATTRIBUTE_NAME = 'hotkey';
+
+const BV_VIDEO_PLAYER_PROGRESS_BAR_CLASS_NAME = 'progress-bar';
+const BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_CLASS_NAME = 'progress-scrubber';
 const BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME = 'progress-scrubber-episode';
+const BV_VIDEO_PLAYER_PROGRESS_HOVER_CLASS_NAME = 'progress-hover';
+const BV_VIDEO_PLAYER_EPISODE_CONTAINER_CLASS_NAME = 'episode-container';
 const BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME = 'episode-padding';
+const BV_VIDEO_PLAYER_EPISODE_LIST_CLASS_NAME = 'episode-list';
+const BV_VIDEO_PLAYER_EPISODE_HOVER_CLASS_NAME = 'episode-hover';
+const BV_VIDEO_PLAYER_EPISODE_LOAD_CLASS_NAME = 'episode-load';
+const BV_VIDEO_PLAYER_EPISODE_PLAY_CLASS_NAME = 'episode-play';
+const BV_VIDEO_PLAYER_EPISODE_HOVER_CURRENT_CLASS_NAME = 'episode-hover-current';
+const BV_VIDEO_PLAYER_EPISODE_WRAPPER_CLASS_NAME = 'episode-wrapper';
+const BV_VIDEO_PLAYER_MENU_ITEM_ICON_CLASS_NAME = 'menu-item-icon';
+const BV_VIDEO_PLAYER_MENU_ITEM_BODY_CLASS_NAME = 'menu-item-body';
+const BV_VIDEO_PLAYER_TIME_INDICATOR_CLASS_NAME = 'time-indicator';
+const BV_VIDEO_PLAYER_PANEL_WRAPPER_CLASS_NAME = 'panel-wrapper';
+const BV_VIDEO_PLAYER_PANEL_BOTTOM_CLASS_NAME = 'panel-bottom';
+const BV_VIDEO_PLAYER_PANEL_BOTTOM_LEFT_CLASS_NAME = 'panel-bottom-left';
+const BV_VIDEO_PLAYER_PANEL_BOTTOM_RIGHT_CLASS_NAME = 'panel-bottom-right';
+const BV_VIDEO_PLAYER_CTL_SPEED_INDICATOR_CLASS_NAME = 'ctl-speed-indicator';
+const BV_VIDEO_PLAYER_CTL_SPEED_INDICATOR_CONTENT_CLASS_NAME = 'ctl-speed-indicator-content';
+const BV_VIDEO_PLAYER_CONTROLS_CONTAINER_CLASS_NAME = 'controls-container';
+
 
 class HTMLBvVideoPlayer extends HTMLElement {
 
@@ -247,9 +269,14 @@ class HTMLBvVideoPlayer extends HTMLElement {
             }
 
             // Go to % positoon
-            if (e.keyCode >= KeyEvent.DOM_VK_0 && e.keyCode <= KeyEvent.DOM_VK_9 ||
-                e.keyCode >= KeyEvent.DOM_VK_NUMPAD0 && e.keyCode <= KeyEvent.DOM_VK_NUMPAD9) {
+            /** @type {boolean} */
+            const isDigitKey = e.keyCode >= KeyEvent.DOM_VK_0 && e.keyCode <= KeyEvent.DOM_VK_9 ||
+                e.keyCode >= KeyEvent.DOM_VK_NUMPAD0 && e.keyCode <= KeyEvent.DOM_VK_NUMPAD9;
+
+            if (isDigitKey) {
+                /** @type {number} */
                 const base = e.keyCode < 96 ? 48 : 96;
+                /** @type {number} */
                 const m = (e.keyCode - base) / 10;
                 this._videoEl.currentTime = this._videoEl.duration * m;
             }
@@ -266,11 +293,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
             }
         });
         window.addEventListener('mouseup', e => {
-            if (this._isMouseDown && e.button === 0) { // Main
+            if (this._isMouseDown && e.button === 0) {
                 this._isMouseDown = false;
 
                 this._updateScrubber();
 
+                /** @type {number} */
                 const time = this._getTimeByPageX(e.pageX);
                 this._videoEl.currentTime = time;
 
@@ -280,25 +308,23 @@ class HTMLBvVideoPlayer extends HTMLElement {
             }
         });
         window.addEventListener('mousemove', async e => {
-            // @ts-ignore
             window.pageX = e.pageX;
-            // @ts-ignore
             window.pageY = e.pageY;
 
             const updateScaling = () => {
                 /** @type {HTMLLIElement} */
                 const currentHoverEpisode = this._getCurrentHoverEpisode(e.pageX);
                 // Progress Hover
-                this._progressBarEl.classList.add('progress-hover');
+                this._progressBarEl.classList.add(BV_VIDEO_PLAYER_PROGRESS_HOVER_CLASS_NAME);
                 // Set Scale
                 for (let i = 0; i < this._episodesContainerEl.children.length; i++) {
                     /** @type {HTMLLIElement} */
                     // @ts-ignore
                     const episode = this._episodesContainerEl.children[i];
                     if (episode === currentHoverEpisode && this._episodesContainerEl.children.length > 1) {
-                        episode.classList.add('episode-hover-current');
+                        episode.classList.add(BV_VIDEO_PLAYER_EPISODE_HOVER_CURRENT_CLASS_NAME);
                     } else {
-                        episode.classList.remove('episode-hover-current');
+                        episode.classList.remove(BV_VIDEO_PLAYER_EPISODE_HOVER_CURRENT_CLASS_NAME);
                     }
                 }
 
@@ -324,13 +350,13 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         updateScaling();
                     } else {
                         // Reset Progress Hover
-                        this._progressBarEl.classList.remove('progress-hover');
+                        this._progressBarEl.classList.remove(BV_VIDEO_PLAYER_PROGRESS_HOVER_CLASS_NAME);
                         // Reset Episode
                         for (let i = 0; i < this._episodesContainerEl.children.length; i++) {
                             /** @type {HTMLLIElement} */
                             // @ts-ignore
                             const episode = this._episodesContainerEl.children[i];
-                            episode.classList.remove('episode-hover-current');
+                            episode.classList.remove(BV_VIDEO_PLAYER_EPISODE_HOVER_CURRENT_CLASS_NAME);
                             // Hover
                             /** @type {EpisodeSubItems} */
                             const subItems = HTMLBvVideoPlayer._getEpisodeSubItems(episode);
@@ -341,7 +367,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                             this._seekContainerEl.style.opacity = '0';
                         }
                         // Scrubber
-                        this._progressScrubberEl.classList.remove('progress-scrubber-episode');
+                        this._progressScrubberEl.classList.remove(BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME);
                     }
                 }
             }
@@ -806,8 +832,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
             x = e.target.offsetLeft + e.offsetX + 6;
         }
 
+        /** @type {number} */
         // @ts-ignore
         const width = e.currentTarget.clientWidth - 1;
+        /** @type {number} */
         let val = x / width;
 
         if (val < 0) {
@@ -872,7 +900,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
             /** @type {boolean} */
             const isSelected = this._curParValue === element.getAttribute('data-value');
             // @ts-ignore
-            element.querySelector('.menu-item-icon').style.visibility = isSelected ? 'visible' : 'hidden';
+            element.querySelector(`.${BV_VIDEO_PLAYER_MENU_ITEM_ICON_CLASS_NAME}`).style.visibility = isSelected ? 'visible' : 'hidden';
         });
     }
 
@@ -941,8 +969,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _updateFullScreenButtonState() {
-        this._fullscrButtonEl.title = (document.fullscreen ? 'Выход из полноэкранного режима' : 'Во весь экран') + this._hotkeyPrint(this._fullscrButtonEl);
-        this._fullscrButtonEl.innerHTML = document.fullscreen
+        this._fullscrButtonEl.title = (document.fullscreenEnabled ? 'Выход из полноэкранного режима' : 'Во весь экран') + this._hotkeyPrint(this._fullscrButtonEl);
+        this._fullscrButtonEl.innerHTML = document.fullscreenEnabled
             ? '<svg viewBox="0 0 36 36"><path d="M14 14h-4v2h6v-6h-2v4zM22 14v-4h-2v6h6v-2h-4zM20 26h2v-4h4v-2h-6v6zM10 22h4v4h2v-6h-6v2z"/></svg>'
             : '<svg viewBox="0 0 36 36"><path d="M10 16h2v-4h4v-2h-6v6zM20 10v2h4v4h2v-6h-6zM24 24h-4v2h6v-6h-2v4zM12 20h-2v6h6v-2h-4v-4z"/></svg>';
     }
@@ -960,8 +988,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         /** @type {DOMRect} */
         const bounding = this._progressBarEl.getBoundingClientRect();
-        if (pageX >= bounding.left
-            && pageX < bounding.right) {
+        if (pageX >= bounding.left && pageX < bounding.right) {
             /** @type {number} */
             const percent = (pageX - bounding.left) / bounding.width;
             return percent * this._videoEl.duration;
@@ -1154,11 +1181,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     static _getEpisodeSubItems(episode) {
         return {
-            paddingEl: episode.querySelector('.episode-padding'),
-            listEl: episode.querySelector('.episode-list'),
-            hoverEl: episode.querySelector('.episode-hover'),
-            loadEl: episode.querySelector('.episode-load'),
-            playEl: episode.querySelector('.episode-play'),
+            paddingEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME}`),
+            listEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_LIST_CLASS_NAME}`),
+            hoverEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_HOVER_CLASS_NAME}`),
+            loadEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_LOAD_CLASS_NAME}`),
+            playEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PLAY_CLASS_NAME}`),
         }
     }
 
@@ -1262,7 +1289,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                          */
                         const CRT_EpisodeContainer = () => {
                             return CRT('ul', {
-                                class: 'episodes-container',
+                                class: BV_VIDEO_PLAYER_EPISODE_CONTAINER_CLASS_NAME,
                             }, episodesContainerEl => this._episodesContainerEl = episodesContainerEl);
                         }
                         /**
@@ -1271,11 +1298,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
                          */
                         const CRT_ProgressScrubber = () => {
                             return CRT('div', {
-                                class: 'progress-scrubber',
+                                class: BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_CLASS_NAME,
                             }, progressScrubberEl => this._progressScrubberEl = progressScrubberEl);
                         }
                         return CRT('div', {
-                            class: 'progress-bar',
+                            class: BV_VIDEO_PLAYER_PROGRESS_BAR_CLASS_NAME,
                             onmousedown: async e => {
                                 if (e.button === 0) {
                                     this._isMouseDown = true;
@@ -1423,11 +1450,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
                              * @returns {HTMLDivElement}
                              */
                             const CRT_TimeIndicator = () => CRT('div', {
-                                class: 'time-indicator',
+                                class: BV_VIDEO_PLAYER_TIME_INDICATOR_CLASS_NAME,
                                 style: 'visibility:collapse;',
                             }, timeIndicatorEl => this._timeIndicator = timeIndicatorEl);
                             return CRT('div', {
-                                class: 'left-panel',
+                                class: BV_VIDEO_PLAYER_PANEL_BOTTOM_LEFT_CLASS_NAME,
                                 children: [
                                     CRT_PlayButton(),
                                     CRT_VolumeControl(),
@@ -1465,10 +1492,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
                                  * @returns {HTMLDivElement}
                                  */
                                 const CRT_SpeedIndicatorContent = () => CRT('div', {
-                                    class: 'ctl-speed-indicator-content',
+                                    class: BV_VIDEO_PLAYER_CTL_SPEED_INDICATOR_CONTENT_CLASS_NAME,
                                 }, speedIndicatorContentEl => this._speedIndicatorContentEl = speedIndicatorContentEl);
                                 return CRT('button', {
-                                    class: 'ctl-speed-indicator',
+                                    class: BV_VIDEO_PLAYER_CTL_SPEED_INDICATOR_CLASS_NAME,
                                     onclick: () => this._setSpeed(this._videoEl, this._playSpeedDef),
                                     children: [
                                         CRT_SpeedIndicatorContent(),
@@ -1530,7 +1557,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                                 },
                             }, fullscrButtonEl => this._fullscrButtonEl = fullscrButtonEl);
                             return CRT('div', {
-                                class: 'right-panel',
+                                class: BV_VIDEO_PLAYER_PANEL_BOTTOM_RIGHT_CLASS_NAME,
                                 children: [
                                     CRT_SlowerButton(),
                                     CRT_SpeedIndicatorButton(),
@@ -1542,7 +1569,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                             });
                         }
                         return CRT('div', {
-                            class: 'controls-container',
+                            class: BV_VIDEO_PLAYER_CONTROLS_CONTAINER_CLASS_NAME,
                             children: [
                                 CRT_LetfControlsPanel(),
                                 CRT_RightControlsPanel(),
@@ -1550,7 +1577,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                         });
                     }
                     return CRT('div', {
-                        class: 'panel-wrapper',
+                        class: BV_VIDEO_PLAYER_PANEL_WRAPPER_CLASS_NAME,
                         children: [
                             //CRT_SeekContainer(),
                             CRT_ProgressBar(),
@@ -1559,7 +1586,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     });
                 }
                 return CRT('div', {
-                    class: 'panel-bottom fade',
+                    class: `${BV_VIDEO_PLAYER_PANEL_BOTTOM_CLASS_NAME} fade`,
                     children: [
                         CRT_PanelWrapper(),
                     ],
@@ -1830,7 +1857,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @returns {HTMLDivElement}
          */
         const CRT_Icon = () => CRT('div', {
-            class: 'menu-item-icon',
+            class: BV_VIDEO_PLAYER_MENU_ITEM_ICON_CLASS_NAME,
             style: 'visibility:hidden;',
             innerHTML: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 172"><path d="M145.43294,37.93294l-80.93294,80.93295l-30.76628,-30.76628l-10.13411,10.13411l40.90039,40.90039l91.06706,-91.06705z"></path></svg>`,
         });
@@ -1840,7 +1867,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @returns {HTMLDivElement}
          */
         const CRT_Text = () => CRT('div', {
-            class: 'menu-item-body',
+            class: BV_VIDEO_PLAYER_MENU_ITEM_BODY_CLASS_NAME,
             innerHTML: html,
         });
 
@@ -1935,16 +1962,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @returns {HTMLUListElement}
          */
         const CRT_EpisodeList = () => CRT('ul', {
-            class: 'episode-list',
+            class: BV_VIDEO_PLAYER_EPISODE_LIST_CLASS_NAME,
             children: [
                 CRT('li', {
-                    class: 'episode-load',
+                    class: BV_VIDEO_PLAYER_EPISODE_LOAD_CLASS_NAME,
                 }),
                 CRT('li', {
-                    class: 'episode-hover',
+                    class: BV_VIDEO_PLAYER_EPISODE_HOVER_CLASS_NAME,
                 }),
                 CRT('li', {
-                    class: 'episode-play',
+                    class: BV_VIDEO_PLAYER_EPISODE_PLAY_CLASS_NAME,
                 }),
             ],
         });
@@ -1954,12 +1981,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @returns {HTMLDivElement}
          */
         const CRT_EpisodePadding = () => CRT('div', {
-            class: 'episode-padding',
+            class: BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME,
         });
 
         /** @type {HTMLDivElement} */
         const episodeWrapper = CRT('div', {
-            class: 'episode-wrapper',
+            class: BV_VIDEO_PLAYER_EPISODE_WRAPPER_CLASS_NAME,
             children: [
                 CRT_EpisodeList(),
                 CRT_EpisodePadding(),

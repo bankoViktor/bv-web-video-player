@@ -106,14 +106,11 @@ function CRT(tagName, options, getter) {
     return node;
 }
 
-
 /**
  * Добавляет {@link HTMLStyleElement} с текстом импортом указанного CSS-файла.
  * @param {string} importUrl 
  * @returns {HTMLStyleElement}
  */
-function CRT_IncludeStyle(importUrl) {
-    return CRT('style', {
-        textContent: `@import "${importUrl}";`,
-    });
-}
+const CRT_IncludeStyle = importUrl => CRT('style', {
+    textContent: `@import "${importUrl}";`,
+});

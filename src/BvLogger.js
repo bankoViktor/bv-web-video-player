@@ -1,9 +1,10 @@
 // BvLogger.js
 
 class BvLogger {
+
     /**
      * @param {string} name Название логгера.
-     * @param {boolean} isPrint Выводит сообщения в консоль. По-умолчанию: TRUE.
+     * @param {boolean=} isPrint Выводит сообщения в консоль. По-умолчанию: TRUE.
      */
     constructor(name, isPrint = true) {
 
@@ -13,8 +14,8 @@ class BvLogger {
          */
         this.name = name;
 
-
         if (isPrint) {
+            /** @type {string[]} */
             const format = [new Date().toISOString(), '::', this.name, '::'];
             this.log = console.log.bind(window.console, ...format);
             //this.debug = console.log.bind(window.console, ...format);

@@ -32,7 +32,7 @@ class HTMLBvQuality extends HTMLElement {
         this._value = null;
 
         /**
-         * Элемени не валидный и не используется.
+         * Элемент не валиден и не используется.
          * @type {boolean} 
          */
         this._invalid = false;
@@ -97,8 +97,7 @@ class HTMLBvQuality extends HTMLElement {
     connectedCallback() {
         this._logger.log(`connected: value = ${this._value}`);
 
-        if (this.parentElement === null ||
-             this.parentElement.nodeName !== BV_QUALITY_TAG_NAME.toUpperCase()) {
+        if (this.parentElement === null || this.parentElement.nodeName !== BV_QUALITY_TAG_NAME.toUpperCase()) {
             this._logger.error(`Тег '${BV_QUALITY_TAG_NAME}' должен находиться внутри элемента '${BV_QUALITY_LIST_TAG_NAME}'.`);
         } else {
             // @ts-ignore
@@ -128,6 +127,7 @@ class HTMLBvQuality extends HTMLElement {
             return;
         }
 
+        /** @type {Event} */
         const event = new CustomEvent(eventName, {
             detail: this,
             cancelable: false,

@@ -32,6 +32,7 @@ class HTMLBvEpisode extends HTMLElement {
         this._title = null;
 
         /**
+         * Родительский элемент-коллекция.
          * @type {HTMLBvEpisodeList}
          */
         this._episodeList = null;
@@ -68,6 +69,7 @@ class HTMLBvEpisode extends HTMLElement {
         switch (name) {
 
             case BV_EPISODE_DURATION_ATTRIBUTE_NAME:
+                /** @type {number} */
                 const duration = parseInt(newValue);
                 if (!isNaN(duration) || duration < 0) {
                     this._duration = duration;
@@ -110,7 +112,7 @@ class HTMLBvEpisode extends HTMLElement {
     }
 
     /**
-     * Уведоляет родительский компонент.
+     * Уведомляет родительский элемент.
      * @param {string} eventName
      * @returns {void}
      */
@@ -119,6 +121,7 @@ class HTMLBvEpisode extends HTMLElement {
             return;
         }
 
+        /** @type {Event} */
         const event = new CustomEvent(eventName, {
             detail: this,
             cancelable: false,
