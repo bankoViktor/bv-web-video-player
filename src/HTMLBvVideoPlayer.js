@@ -1871,9 +1871,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
             innerHTML: html,
         });
 
-        debugger
         return CRT('li', {
-            'data-value': value,
+            //'data-value': value,
             onclick: e => {
                 this._showMenu(false);
 
@@ -1891,9 +1890,13 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this._curParValue = value;
     
                 this._updateMenu();
+
+                debugger
     
                 // устанавливаем новое качество
+                /** @type {number} */
                 const curTime = this._videoEl.currentTime;
+                /** @type {boolean} */
                 const isPaused = this._videoEl.paused;
                 this._videoEl.src = `${this._src}?${this._param}=${this._curParValue}`;
                 this._videoEl.currentTime = curTime;
