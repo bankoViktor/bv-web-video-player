@@ -751,12 +751,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @param {DOMPoint} point Точка.
          * @returns {boolean}
          */
-        const isPointInRect = function (rect, point) {
-            /** @type {boolean} */
-            const byX = point.x >= rect.left && point.x <= rect.right;
-            /** @type {boolean} */
-            const byY = point.y >= rect.top && point.y <= rect.bottom;
-            return byX && byY;
+        const isPointInRectByX = function (rect, point) {
+            return point.x >= rect.left && point.x < rect.right;
         }
 
         if (this._episodesContainerEl.children.length > 1) {
@@ -766,12 +762,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 /** @type {HTMLLIElement} */
                 const episode = this._getCurrentHoverEpisode(window.pageX);
                 /** @type {DOMRect} */
-                const bounding = episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME}`).getBoundingClientRect();
+                const episodeBounding = episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME}`).getBoundingClientRect();
                 /** @type {DOMRect} */
                 const scrubberBounding = this._progressScrubberEl.getBoundingClientRect();
                 /** @type {DOMPoint} */
                 const point = new DOMPoint(scrubberBounding.left + scrubberBounding.width / 2, window.pageY);
-                if (isPointInRect(bounding, point)) {
+                if (isPointInRectByX(episodeBounding, point)) {
                     this._progressScrubberEl.classList.add(BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME);
                 } else {
                     this._progressScrubberEl.classList.remove(BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME);
