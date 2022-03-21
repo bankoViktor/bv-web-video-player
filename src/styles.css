@@ -214,8 +214,8 @@ li.episode-hover {
 
 .progress-scrubber {
     --scale-ratio: 0;
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
     border-radius: 50%;
     position: absolute;
     top: 50%;
