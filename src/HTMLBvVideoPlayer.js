@@ -746,7 +746,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     _updateScrubber() {
         /**
-         * Проверяет попадания точки в прямоугольник.
+         * Проверяет попадание точки в прямоугольник по оси X.
          * @param {DOMRect} rect Прямоугольная область.
          * @param {DOMPoint} point Точка.
          * @returns {boolean}
