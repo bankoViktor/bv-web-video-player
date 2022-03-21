@@ -14,13 +14,13 @@
     user-select: none;
     font-family: Arial, Helvetica, sans-serif;
     position: relative;
+    background-color: black;
 }
 
     :host > video {
         display: block;
         height: 100%;
         width: 100%;
-        background-color: black;
     }
 
 /* PANELS */
