@@ -48,23 +48,23 @@ interface EpisodeSubItems {
     /**
      * Элемент увеличения зоны интерактивности для курсора.
      */
-    paddingEl: HTMLDivElement,
+    padding: HTMLDivElement,
     /**
      * Элемент список прогресс-баров эпизода.
      */
-    listEl: HTMLUListElement,
+    list: HTMLUListElement,
     /**
      * Прогресс-бар поиска под курсором.
      */
-    hoverEl: HTMLDivElement,
+    hover: HTMLDivElement,
     /**
      * Прогресс-бар загрузки (буфера).
      */
-    loadEl: HTMLDivElement,
+    load: HTMLDivElement,
     /**
      * Прогресс-бар проигрывания.
      */
-    playEl: HTMLDivElement,
+    play: HTMLDivElement,
 }
 
 /**

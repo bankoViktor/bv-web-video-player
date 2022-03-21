@@ -1,6 +1,5 @@
 // HTMLBvEpisode.js
 
-const BV_EPISODE_TAG_NAME = 'bv-episode';
 const BV_EPISODE_DURATION_ATTRIBUTE_NAME = 'duration';
 const BV_EPISODE_TITLE_ATTRIBUTE_NAME = 'title';
 const BV_EPISODE_ADD_EVENT_NAME = 'episode-add';

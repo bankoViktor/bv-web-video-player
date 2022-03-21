@@ -1,6 +1,5 @@
 // HTMLBvQuality.js
 
-const BV_QUALITY_TAG_NAME = 'bv-quality';
 const BV_QUALITY_VALUE_ATTRIBUTE_NAME = 'value';
 const BV_QUALITY_INVALID_ATTRIBUTE_NAME = 'invalid';
 const BV_QUALITY_ADD_EVENT_NAME = 'quality-add';

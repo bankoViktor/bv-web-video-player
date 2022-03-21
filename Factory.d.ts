@@ -181,6 +181,37 @@ interface FactoryOptions_HTMLLIElement extends FactoryOptions_Element {
     value?: number;
 }
 
+/** Параметры элемента {@link HTMLMediaElement}. */
+interface FactoryOptions_HTMLMediaElement extends FactoryOptions_HTMLElement {
+     autoplay?: boolean;
+     controls?: boolean;
+     crossOrigin?: string | null;
+     currentTime?: number;
+     defaultMuted?: boolean;
+     defaultPlaybackRate?: number;
+     disableRemotePlayback?: boolean;
+     loop?: boolean;
+     muted?: boolean;
+     onencrypted?: ((this: HTMLMediaElement, ev: MediaEncryptedEvent) => any) | null;
+     onwaitingforkey?: ((this: HTMLMediaElement, ev: Event) => any) | null;
+     playbackRate?: number;
+     preload?: "none" | "metadata" | "auto" | "";
+     src?: string;
+     srcObject?: MediaProvider | null;
+     volume?: number;
+}
+
+/** Параметры элемента {@link HTMLVideoElement}. */
+interface FactoryOptions_HTMLVideoElement extends FactoryOptions_HTMLMediaElement {
+    disablePictureInPicture?: boolean;
+    height?: number;
+    onenterpictureinpicture?: ((this: HTMLVideoElement, ev: Event) => any) | null;
+    onleavepictureinpicture?: ((this: HTMLVideoElement, ev: Event) => any) | null;
+    playsInline?: boolean;
+    poster?: string;
+    width?: number;
+}
+
 /** Карта сопоставления тегов элементов с их типом. */
 interface HTMLElementFactoryTagNameMap extends HTMLElementTagNameMap {
     "fragment": DocumentFragment;
@@ -305,6 +336,6 @@ interface FactoryOptionsMap {
     //"u": HTMLElement;
     "ul": FactoryOptions_HTMLElement;
     //"var": HTMLElement;
-    //"video": HTMLVideoElement;
+    "video": FactoryOptions_HTMLVideoElement;
     //"wbr": HTMLElement;
 }

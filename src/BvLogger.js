@@ -3,26 +3,47 @@
 class BvLogger {
 
     /**
-     * @param {string} name Название логгера.
-     * @param {boolean=} isPrint Выводит сообщения в консоль. По-умолчанию: TRUE.
+     * Название логгера.
+     * @type {string}
      */
-    constructor(name, isPrint = true) {
+    name;
 
-        /**
-         * Название логгера.
-         * @type {string} 
-         */
-        this.name = name;
+    /**
+     * Состояние логгера.
+     * @type {boolean}
+     */
+    enabled;
 
-        if (isPrint) {
-            /** @type {string[]} */
-            const format = [new Date().toISOString(), '::', this.name, '::'];
-            this.log = console.log.bind(window.console, ...format);
-            //this.debug = console.log.bind(window.console, ...format);
-            //this.warm = console.warm.bind(window.console, format);
-            this.error = console.error.bind(window.console, ...format);
-        } else {
-            this.log = this.error = function () { };
+    /**
+     * @param {string} name Название логгера.
+     * @param {boolean=} enabled Выводит сообщения в консоль. По-умолчанию: TRUE.
+     */
+    constructor(name, enabled = true) {
+       this.name = name;
+       this.enabled = enabled;
+    }
+
+    /**
+     * @param {string} message
+     * @returns {void}
+     */
+    log(message) {
+        if (this.enabled) {
+            /** @type {string} */
+            const msg = `${new Date().toUTCString()} :: ${this.name} :: ${message}`;
+            console.log(msg);
+        }
+    }
+
+    /**
+     * @param {string} message
+     * @returns {void}
+     */
+    error(message) {
+        if (this.enabled) {
+            /** @type {string} */
+            const msg = `${new Date().toUTCString()} :: ${this.name} :: ${message}`;
+            console.error(msg);
         }
     }
 }

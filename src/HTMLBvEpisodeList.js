@@ -1,6 +1,5 @@
 // HTMLBvEpisodeList.js
 
-const BV_EPISODE_LIST_TAG_NAME = 'bv-episode-list';
 const BV_EPISODE_LIST_CHANGED_EVENT_NAME = 'episodelist-changed';
 
 

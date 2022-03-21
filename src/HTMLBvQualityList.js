@@ -1,6 +1,5 @@
 // HTMLBvQualityList.js
 
-const BV_QUALITY_LIST_TAG_NAME = 'bv-quality-list';
 const BV_QUALITY_LIST_CHANGED_EVENT_NAME = 'qualitylist-changed';
 
 

@@ -1,6 +1,5 @@
 // HTMLBvVideoPlayer.js
 
-const BV_VIDEO_PLAYER_TAG_NAME = 'bv-video-player';
 const BV_VIDEO_PLAYER_SOURCE_ATTRIBUTE_NAME = 'src';
 const BV_VIDEO_PLAYER_PARAM_ATTRIBUTE_NAME = 'param';
 const BV_VIDEO_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME = 'speed-control';
@@ -169,19 +168,19 @@ class HTMLBvVideoPlayer extends HTMLElement {
         this._moveTimer = null;
 
         //#endregion Properties
-        
+
         //#region Elements
 
         /**
          * Элемент нижней панели.
          * @type {HTMLDivElement}
          */
-         this._panelBottonEl = null;
+        this._panelBottonEl = null;
 
-         /**
-          * Всплывающее меню настроек.
-          * @type {HTMLDivElement} 
-          */
+        /**
+         * Всплывающее меню настроек.
+         * @type {HTMLDivElement} 
+         */
         this._popupMenuEl = null;
 
         /**
@@ -237,7 +236,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @type {HTMLButtonElement}
          */
         this._volumeButtonEl = null;
- 
+
         /**
          * Полоса заполнения, отображает уровень громкости. 
          * @type {HTMLDivElement}
@@ -249,7 +248,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @type { HTMLDivElement }
          */
         this._volumeSliderThumb = null;
- 
+
         /**
          * Индекатор времени.
          * @type {HTMLSpanElement}
@@ -297,7 +296,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @type {HTMLButtonElement}
          */
         this._fullscrButtonEl = null;
-        
+
         /**
          * Bottom Gradient
          * @type {HTMLDivElement}
@@ -331,7 +330,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
              * @param {number} percent
              * @returns {void}
              */
-            const digitHandle = percent => {
+            const gotoPercentVideo = percent => {
                 this._videoEl.currentTime = this._videoEl.duration * (percent / 100);
             }
 
@@ -413,52 +412,52 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
                 case 'Digit0':
                 case 'Numpad0':
-                    digitHandle(0);
+                    gotoPercentVideo(0);
                     break;
 
                 case 'Digit1':
                 case 'Numpad1':
-                    digitHandle(10);
+                    gotoPercentVideo(10);
                     break;
 
                 case 'Digit2':
                 case 'Numpad2':
-                    digitHandle(20);
+                    gotoPercentVideo(20);
                     break;
 
                 case 'Digit3':
                 case 'Numpad3':
-                    digitHandle(30);
+                    gotoPercentVideo(30);
                     break;
 
                 case 'Digit4':
                 case 'Numpad4':
-                    digitHandle(40);
+                    gotoPercentVideo(40);
                     break;
 
                 case 'Digit5':
                 case 'Numpad5':
-                    digitHandle(50);
+                    gotoPercentVideo(50);
                     break;
 
                 case 'Digit6':
                 case 'Numpad6':
-                    digitHandle(60);
+                    gotoPercentVideo(60);
                     break;
 
                 case 'Digit7':
                 case 'Numpad7':
-                    digitHandle(70);
+                    gotoPercentVideo(70);
                     break;
 
                 case 'Digit8':
                 case 'Numpad8':
-                    digitHandle(80);
+                    gotoPercentVideo(80);
                     break;
 
                 case 'Digit9':
                 case 'Numpad9':
-                    digitHandle(80);
+                    gotoPercentVideo(80);
                     break;
             }
         });
@@ -517,14 +516,14 @@ class HTMLBvVideoPlayer extends HTMLElement {
             if (hoverTime != null) {
                 if (this._isMouseDown) {
                     this._setProgressPlayPosition(hoverTime);
-                    this._setProgressSeekPosition(hoverTime, e.pageX);
+                    //this._setProgressSeekPosition(hoverTime, e.pageX);
                     this._setProgressSubItemsPosition('hover', hoverTime);
                     // Scale
                     updateScaling();
                 } else {
                     // @ts-ignore
                     if (e.path.includes(this._progressBarEl)) {
-                        this._setProgressSeekPosition(hoverTime, e.pageX);
+                        //this._setProgressSeekPosition(hoverTime, e.pageX);
                         this._setProgressSubItemsPosition('hover', hoverTime);
                         // Scale
                         updateScaling();
@@ -540,12 +539,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
                             // Hover
                             /** @type {EpisodeSubItems} */
                             const subItems = HTMLBvVideoPlayer._getEpisodeSubItems(episode);
-                            subItems.hoverEl.style.width = '0';
+                            subItems.hover.style.width = '0';
                         }
                         // Seek
-                        if (this._seekContainerEl !== null) {
-                            this._seekContainerEl.style.opacity = '0';
-                        }
+                        //if (this._seekContainerEl !== null) {
+                        //    this._seekContainerEl.style.opacity = '0';
+                        //}
                         // Scrubber
                         this._progressScrubberEl.classList.remove(BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_EPISODE_CLASS_NAME);
                     }
@@ -742,6 +741,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     /**
+     * Обновляет состояние точки позиции воспроизведения на тайм-лайне.
      * @returns {void}
      */
     _updateScrubber() {
@@ -766,7 +766,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 /** @type {HTMLLIElement} */
                 const episode = this._getCurrentHoverEpisode(window.pageX);
                 /** @type {DOMRect} */
-                const bounding = episode.querySelector(BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME).getBoundingClientRect();
+                const bounding = episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME}`).getBoundingClientRect();
                 /** @type {DOMRect} */
                 const scrubberBounding = this._progressScrubberEl.getBoundingClientRect();
                 /** @type {DOMPoint} */
@@ -804,6 +804,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _showMenu(isShow = true) {
+        return;
         this._popupMenuEl.style.visibility = isShow ? 'visible' : 'collapse';
         this._popupMenuEl.style.opacity = isShow ? '1' : '0';
     }
@@ -1055,7 +1056,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
             /** @type {HTMLLIElement} */
             // @ts-ignore
             const episode = this._episodesContainerEl.children[i];
-            /** @type {HTMLLIElement} */
+
+            /** @type {HTMLDivElement} */
             const episodeSubItem = HTMLBvVideoPlayer._getEpisodeSubItems(episode)[subItem];
 
             /** @type {DOMRect} */
@@ -1225,11 +1227,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
      */
     static _getEpisodeSubItems(episode) {
         return {
-            paddingEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME}`),
-            listEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_LIST_CLASS_NAME}`),
-            hoverEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_HOVER_CLASS_NAME}`),
-            loadEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_LOAD_CLASS_NAME}`),
-            playEl: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PLAY_CLASS_NAME}`),
+            padding: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PADDING_CLASS_NAME}`),
+            list: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_LIST_CLASS_NAME}`),
+            hover: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_HOVER_CLASS_NAME}`),
+            load: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_LOAD_CLASS_NAME}`),
+            play: episode.querySelector(`.${BV_VIDEO_PLAYER_EPISODE_PLAY_CLASS_NAME}`),
         }
     }
 
@@ -1269,7 +1271,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * @param {string} path
          * @returns {HTMLElement}
          */
-        const CRT_ImportStylesheet = path => CRT('style', { textContent: `@import "${path}";`, });
+        const CRT_ImportStylesheet = path => CRT('style', {
+            textContent: `@import "${path}";`,
+        });
 
         /**
          * Create Root
@@ -1295,7 +1299,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                          * Create Hover Preview
                          * @returns {HTMLElement}
                          */
-                        const CRT_HoverPreview = () =>  CRT('div', {
+                        const CRT_HoverPreview = () => CRT('div', {
                             class: 'progress-hover-preview',
                         }, hoverPreviewEl => this._hoverPreviewEl = hoverPreviewEl);
                         /**
@@ -1647,195 +1651,201 @@ class HTMLBvVideoPlayer extends HTMLElement {
              * Create Video
              * @returns {HTMLVideoElement}
              */
-            const CRT_Video = () => {
-                return CRT('video', {
-                    type: 'video/mp4',
-                    textContent: 'Тег video не поддерживается вашим браузером. Обновите браузер.',
-                    ontimeupdate: () => {
-                        this._updateTime();
+            const CRT_Video = () => CRT('video', {
+                src: this._src,
+                textContent: 'Тег video не поддерживается вашим браузером. Обновите браузер.',
+                ontimeupdate: () => {
+                    this._updateTime();
 
-                        if (!this._isMouseDown) {
-                            this._setProgressPlayPosition(this._videoEl.currentTime);
-                            this._updateScrubber();
-                        }
-                    },
-                    onplay: () => this._updatePlayButtonState(),
-                    onpause: () => this._updatePlayButtonState(),
-                    onvolumechange: e => {
-                        this._updateVolumeButtonState();
-                        /** @type {HTMLVideoElement} */
-                        // @ts-ignore
-                        const sender = e.currentTarget;
-                        this._volumeSliderFillEl.style.width = sender.volume * 100 + '%';
-                    },
-                    onratechange: () => this._updateSpeedControls(),
-                    onenterpictureinpicture: () => this._updatePipButtonState(true),
-                    onleavepictureinpicture: () => this._updatePipButtonState(false),
-                    onclick: () => {
-                        if (this._popupMenuEl.style.opacity !== '1') {
-                            this._playButtonEl.click();
-                        }
-                    },
-                    // 1. loadstart
-                    onloadstart: () => {
-                        this._logger.log('load start');
-                        this._spinnerShow();
-                    },
-                    // 2. durationchange
-                    ondurationchange: () => {
-                        //this._logger.log('duration change');
-                        this._updateTime();
-                    },
-                    // 3. loadedmetadata 
-                    onloadedmetadata: () => {
-                        this._logger.log('loaded meta data');
-                    },
-                    // 4. loadeddata
-                    onloadeddata: () => {
-                        this._logger.log('loaded data');
-                        this._playButtonEl.disabled = false;
-            
-                        // Append Episode
-                        /**
-                         * @type {HTMLBvEpisodeList} 
-                         */
-                        //const episodeList = this.querySelector('bv-episode-list');
-                        //if (episodeList !== null) {
-                        //    this._removeEpisodes();
-                        //    for (let i = 0; i < episodeList.children.length; i++) {
-                        //        /**
-                        //         * @type {HTMLBvEpisode} 
-                        //         */
-                        //        const episode = episodeList.children[i];
-                        //        this._appendEpisode({
-                        //            duration: episode.duration,
-                        //            title: episode.title,
-                        //        });
-                        //    }
-                        //}
-                    },
-                    // 5. progress
-                    onprogress: e => {
+                    if (!this._isMouseDown) {
+                        this._setProgressPlayPosition(this._videoEl.currentTime);
                         this._updateScrubber();
+                    }
+                },
+                onplay: () => this._updatePlayButtonState(),
+                onpause: () => this._updatePlayButtonState(),
+                onvolumechange: e => {
+                    this._updateVolumeButtonState();
+                    /** @type {HTMLVideoElement} */
+                    // @ts-ignore
+                    const sender = e.currentTarget;
+                    this._volumeSliderFillEl.style.width = sender.volume * 100 + '%';
+                },
+                onratechange: () => this._updateSpeedControls(),
+                onenterpictureinpicture: () => this._updatePipButtonState(true),
+                onleavepictureinpicture: () => this._updatePipButtonState(false),
+                onclick: () => {
+                    if (this._popupMenuEl.style.opacity !== '1') {
+                        this._playButtonEl.click();
+                    }
+                },
+                // 1. loadstart
+                onloadstart: () => {
+                    this._logger.log('load start');
+                    this._spinnerShow();
+                },
+                // 2. durationchange
+                ondurationchange: () => {
+                    //this._logger.log('duration change');
+                    this._updateTime();
+                },
+                // 3. loadedmetadata 
+                onloadedmetadata: () => {
+                    this._logger.log('loaded metadata');
+                },
+                // 4. loadeddata
+                onloadeddata: () => {
+                    this._logger.log('loaded data');
+                    this._playButtonEl.disabled = false;
 
-                        /** @type {HTMLVideoElement} */
-                        // @ts-ignore
-                        const sender = e.currentTarget;
-                        // const buff = sender.buffered;
-                        // this._buffersSegsList.innerHTML = '';
-                        // for (let i = 0; i < buff.length; i++) {
-                        //     const start = buff.start(i);
-                        //     const end = buff.end(i);
-                        //     const x = start / sender.duration;
-                        //     const w = end / sender.duration - x;
-            
-                        //     const li = document.createElement('li');
-                        //     li.style.left = x * 100 + '%';
-                        //     li.style.width = w * 100 + '%';
-            
-                        //     this._buffersSegsList.appendChild(li);
-                        // }
-            
-                        // Спиннер при загрузке видео
-            
-                        switch (sender.networkState) {
-            
-                            case sender.NETWORK_LOADING:
-                                this._spinnerShow();
-                                break;
-            
-                            case sender.NETWORK_IDLE:
-                                this._spinnerHide();
-                                break;
+                    // Append Episode
+                    /** @type {HTMLBvEpisodeList} */
+                    this.appendEpisodes([
+                        {
+                            title: 'Episode #1',
+                            duration: this._videoEl.duration / 2,
+                        },
+                        {
+                            title: 'Episode #1',
+                            duration: this._videoEl.duration / 2,
                         }
-            
-                        let networkState;
-                        switch (sender.networkState) {
-                            case 0:
-                                networkState = 'NETWORK_EMPTY';
-                                break;
-                            case 1:
-                                networkState = 'NETWORK_IDLE';
-                                break;
-                            case 2:
-                                networkState = 'NETWORK_LOADING';
-                                break;
-                            case 3:
-                                networkState = 'NETWORK_NO_SOURCE';
-                                break;
-                        }
-            
-                        let readyState;
-                        switch (sender.readyState) {
-                            case 0:
-                                readyState = 'HAVE_NOTHING';
-                                break;
-                            case 1:
-                                readyState = 'HAVE_METADATA';
-                                break;
-                            case 2:
-                                readyState = 'HAVE_CURRENT_DATA';
-                                break;
-                            case 3:
-                                readyState = 'HAVE_FUTURE_DATA';
-                                break;
-                            case 4:
-                                readyState = 'HAVE_ENOUGH_DATA';
-                                break;
-                        }
-            
-                        this._logger.log(`progress: network ${networkState} / ready ${readyState}`);
-                    },
-                    // 6. canplay
-                    oncanplay: () => {
-                        //this._logger.log('can play');
-                        this._spinnerHide();
-                    },
-                    // 7. canplaythrough
-                    oncanplaythrough: () => {
-                        //this._logger.log('can play through');
-                    },
-                    onerror: e => {
-                        /** @type {HTMLVideoElement} */
-                        // @ts-ignore
-                        const sender = e.currentTarget;
+                    ]);
+                    //const episodeList = this.querySelector('bv-episode-list');
+                    //if (episodeList !== null) {
+                    //    this._removeEpisodes();
+                    //    for (let i = 0; i < episodeList.children.length; i++) {
+                    //        /**
+                    //         * @type {HTMLBvEpisode} 
+                    //         */
+                    //        const episode = episodeList.children[i];
+                    //        this._appendEpisode({
+                    //            duration: episode.duration,
+                    //            title: episode.title,
+                    //        });
+                    //    }
+                    //}
+                },
+                // 5. progress
+                onprogress: e => {
+                    this._updateScrubber();
 
-                        this._spinnerHide();
+                    /** @type {HTMLVideoElement} */
+                    // @ts-ignore
+                    const sender = e.currentTarget;
+                    // const buff = sender.buffered;
+                    // this._buffersSegsList.innerHTML = '';
+                    // for (let i = 0; i < buff.length; i++) {
+                    //     const start = buff.start(i);
+                    //     const end = buff.end(i);
+                    //     const x = start / sender.duration;
+                    //     const w = end / sender.duration - x;
 
-                        /** @type {HTMLDivElement} */
-                        const block = document.createElement('div');
-                        block.textContent = 'Источник видео не найден';
-                        block.style.position = 'absolute';
-                        block.style.left = '50%';
-                        block.style.top = '50%';
-                        block.style.transform = 'translateX(-50%) translateY(-50%)';
-                        block.style.border = '2px solid red';
-                        block.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
-                        block.style.color = 'white';
-                        block.style.fontSize = '2rem';
-                        block.style.padding = '20px';
-                        this.appendChild(block);
+                    //     const li = document.createElement('li');
+                    //     li.style.left = x * 100 + '%';
+                    //     li.style.width = w * 100 + '%';
 
-                        let err;
-                        switch (sender.error.code) {
-                            case 1:
-                                err = 'MEDIA_ERR_ABORTED';
-                                break;
-                            case 2:
-                                err = 'MEDIA_ERR_NETWORK';
-                                break;
-                            case 3:
-                                err = 'MEDIA_ERR_DECODE';
-                                break;
-                            case 4:
-                                err = 'MEDIA_ERR_SRC_NOT_SUPPORTED';
-                                break;
-                        }
+                    //     this._buffersSegsList.appendChild(li);
+                    // }
 
-                        this._logger.error(`${sender.error.code} ${err} - ${sender.error.message}`);
-                    },
-                }, videoEl => this._videoEl = videoEl);
-            }
+                    // Спиннер при загрузке видео
+
+                    switch (sender.networkState) {
+
+                        case sender.NETWORK_LOADING:
+                            this._spinnerShow();
+                            break;
+
+                        case sender.NETWORK_IDLE:
+                            this._spinnerHide();
+                            break;
+                    }
+
+                    let networkState;
+                    switch (sender.networkState) {
+                        case 0:
+                            networkState = 'NETWORK_EMPTY';
+                            break;
+                        case 1:
+                            networkState = 'NETWORK_IDLE';
+                            break;
+                        case 2:
+                            networkState = 'NETWORK_LOADING';
+                            break;
+                        case 3:
+                            networkState = 'NETWORK_NO_SOURCE';
+                            break;
+                    }
+
+                    let readyState;
+                    switch (sender.readyState) {
+                        case 0:
+                            readyState = 'HAVE_NOTHING';
+                            break;
+                        case 1:
+                            readyState = 'HAVE_METADATA';
+                            break;
+                        case 2:
+                            readyState = 'HAVE_CURRENT_DATA';
+                            break;
+                        case 3:
+                            readyState = 'HAVE_FUTURE_DATA';
+                            break;
+                        case 4:
+                            readyState = 'HAVE_ENOUGH_DATA';
+                            break;
+                    }
+
+                    this._logger.log(`progress: network ${networkState} / ready ${readyState}`);
+                },
+                // 6. canplay
+                oncanplay: () => {
+                    //this._logger.log('can play');
+                    this._spinnerHide();
+                },
+                // 7. canplaythrough
+                oncanplaythrough: () => {
+                    //this._logger.log('can play through');
+                },
+                onerror: e => {
+                    /** @type {HTMLVideoElement} */
+                    // @ts-ignore
+                    const sender = e.currentTarget;
+
+                    this._spinnerHide();
+
+                    /** @type {HTMLDivElement} */
+                    const block = document.createElement('div');
+                    block.textContent = 'Источник видео не найден';
+                    block.style.position = 'absolute';
+                    block.style.left = '50%';
+                    block.style.top = '50%';
+                    block.style.transform = 'translateX(-50%) translateY(-50%)';
+                    block.style.border = '2px solid red';
+                    block.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+                    block.style.color = 'white';
+                    block.style.fontSize = '2rem';
+                    block.style.padding = '20px';
+                    this.appendChild(block);
+
+                    let err;
+                    switch (sender.error.code) {
+                        case 1:
+                            err = 'MEDIA_ERR_ABORTED';
+                            break;
+                        case 2:
+                            err = 'MEDIA_ERR_NETWORK';
+                            break;
+                        case 3:
+                            err = 'MEDIA_ERR_DECODE';
+                            break;
+                        case 4:
+                            err = 'MEDIA_ERR_SRC_NOT_SUPPORTED';
+                            break;
+                    }
+
+                    this._logger.error(`${sender.error.code} ${err} - ${sender.error.message}`);
+                },
+            }, videoEl => this._videoEl = videoEl);
             /**
              * Create Spinner
              * @returns {HTMLElement}
@@ -1865,7 +1875,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     CRT_BottomPanel(),
                     //CRT_BottomGradient(),
                     CRT_Video(),
-                    //CRT_SpinnerWrapper(),
+                    CRT_SpinnerWrapper(),
                 ],
             });
         }
@@ -1923,20 +1933,18 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 /** @type {HTMLLIElement} */
                 // @ts-ignore
                 const sender = e.currentTarget;
-    
+
                 /** @type {string} */
                 const value = sender.getAttribute('data-value');
-    
+
                 if (this._curParValue === value) {
                     return;
                 }
-    
+
                 this._curParValue = value;
-    
+
                 this._updateMenu();
 
-                debugger
-    
                 // устанавливаем новое качество
                 /** @type {number} */
                 const curTime = this._videoEl.currentTime;
@@ -1963,8 +1971,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     _appendEpisode(episodeData) {
-        if (typeof episodeData !== 'undefined'
-            && isNaN(this._videoEl.duration)) {
+        if (isNaN(this._videoEl.duration)) {
             console.error(`Duration is NaN.`);
             return;
         }
@@ -1978,11 +1985,12 @@ class HTMLBvVideoPlayer extends HTMLElement {
         // Title
 
         /** @type {boolean} */
-        const hasTitle = typeof episodeData.title === 'string'
+        const hasTitle = hasData 
+            && typeof episodeData.title === 'string'
             && episodeData.title !== null
             && episodeData.title.length > 0;
 
-        if (hasData && hasTitle) {
+        if (hasTitle) {
             item.setAttribute('data-title', episodeData.title);
         }
 
@@ -1990,17 +1998,15 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         /** @type {number} */
         let duration = this._videoEl.duration;
+
         /** @type {boolean} */
-        const hasDuration = typeof episodeData.duration === 'number'
+        const hasDuration = hasData
+            && typeof episodeData.duration === 'number'
             && episodeData.duration !== null
             && episodeData.duration >= 0;
 
-        if (hasData && hasDuration) {
-            if (episodeData.duration < 0) {
-                console.error('Duration out of range');
-            } else {
-                duration = episodeData.duration;
-            }
+        if (hasDuration) {
+            duration = episodeData.duration;
         }
         item.style.width = (duration / this._videoEl.duration) * 100 + '%';
 
