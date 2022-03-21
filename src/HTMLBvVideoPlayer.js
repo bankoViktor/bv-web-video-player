@@ -326,14 +326,23 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 return;
             }
 
-            switch (e.keyCode) {
+            /**
+             * Перейти на % видео.
+             * @param {number} percent
+             * @returns {void}
+             */
+            const digitHandle = percent => {
+                this._videoEl.currentTime = this._videoEl.duration * (percent / 100);
+            }
 
-                case KeyEvent.DOM_VK_F:
+            switch (e.code) {
+
+                case 'KeyF':
                     this._fullscrButtonEl.click();
                     break;
 
-                case KeyEvent.DOM_VK_SPACE:
-                case KeyEvent.DOM_VK_K:
+                case 'Space':
+                case 'KeyK':
                     if (this._videoEl.paused) {
                         this._playButtonEl.click();
                     } else if (this._videoEl.playbackRate != 1) {
@@ -344,41 +353,41 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     }
                     break;
 
-                case KeyEvent.DOM_VK_LEFT:
+                case 'ArrowLeft':
                     this._videoEl.currentTime = Math.max(this._videoEl.currentTime - this._moveTimeStep, 0);
                     break;
 
-                case KeyEvent.DOM_VK_H:
+                case 'KeyH':
                     if (!this._videoEl.paused) {
                         this._playButtonEl.click();
                     }
                     this._videoEl.currentTime = Math.max(this._videoEl.currentTime - 1 / 25, 0);
                     break;
 
-                case KeyEvent.DOM_VK_RIGHT:
+                case 'ArrowRight':
                     this._videoEl.currentTime = Math.min(this._videoEl.currentTime + this._moveTimeStep, this._videoEl.duration);
                     break;
 
-                case KeyEvent.DOM_VK_SEMICOLON:
+                case 'Semicolon':
                     if (!this._videoEl.paused) {
                         this._playButtonEl.click();
                     }
                     this._videoEl.currentTime = Math.min(this._videoEl.currentTime + 1 / 25, this._videoEl.duration);
                     break;
 
-                case KeyEvent.DOM_VK_I:
+                case 'KeyI':
                     this._pipButtonEl.click();
                     break;
 
-                case KeyEvent.DOM_VK_J:
+                case 'KeyJ':
                     this._slowerButtonEl.click();
                     break;
 
-                case KeyEvent.DOM_VK_L:
+                case 'KeyL':
                     this._fasterButtonEl.click();
                     break;
 
-                case KeyEvent.DOM_VK_M:
+                case 'KeyM':
                     this._volumeButtonEl.click();
                     if (this._videoEl.volume == 0) {
                         this._videoEl.muted = false;
@@ -386,7 +395,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     }
                     break;
 
-                case KeyEvent.DOM_VK_UP:
+                case 'ArrowUp':
                     this._videoEl.volume = Math.min(Math.floor(this._videoEl.volume * 100) / 100 + this._volumeStep, 1);
                     if (this._videoEl.muted) {
                         this._videoEl.muted = false;
@@ -394,7 +403,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     e.preventDefault();
                     break;
 
-                case KeyEvent.DOM_VK_DOWN:
+                case 'ArrowDown':
                     this._videoEl.volume = Math.max(Math.floor(this._videoEl.volume * 100) / 100 - this._volumeStep, 0);
                     if (this._videoEl.muted) {
                         this._videoEl.muted = false;
@@ -402,29 +411,64 @@ class HTMLBvVideoPlayer extends HTMLElement {
                     e.preventDefault();
                     break;
 
+                case 'Digit0':
+                case 'Numpad0':
+                    digitHandle(0);
+                    break;
+
+                case 'Digit1':
+                case 'Numpad1':
+                    digitHandle(10);
+                    break;
+
+                case 'Digit2':
+                case 'Numpad2':
+                    digitHandle(20);
+                    break;
+
+                case 'Digit3':
+                case 'Numpad3':
+                    digitHandle(30);
+                    break;
+
+                case 'Digit4':
+                case 'Numpad4':
+                    digitHandle(40);
+                    break;
+
+                case 'Digit5':
+                case 'Numpad5':
+                    digitHandle(50);
+                    break;
+
+                case 'Digit6':
+                case 'Numpad6':
+                    digitHandle(60);
+                    break;
+
+                case 'Digit7':
+                case 'Numpad7':
+                    digitHandle(70);
+                    break;
+
+                case 'Digit8':
+                case 'Numpad8':
+                    digitHandle(80);
+                    break;
+
+                case 'Digit9':
+                case 'Numpad9':
+                    digitHandle(80);
+                    break;
             }
-
-            // Go to % positoon
-            /** @type {boolean} */
-            const isDigitKey = e.keyCode >= KeyEvent.DOM_VK_0 && e.keyCode <= KeyEvent.DOM_VK_9 ||
-                e.keyCode >= KeyEvent.DOM_VK_NUMPAD0 && e.keyCode <= KeyEvent.DOM_VK_NUMPAD9;
-
-            if (isDigitKey) {
-                /** @type {number} */
-                const base = e.keyCode < 96 ? 48 : 96;
-                /** @type {number} */
-                const m = (e.keyCode - base) / 10;
-                this._videoEl.currentTime = this._videoEl.duration * m;
-            }
-
         });
         window.addEventListener('keydown', e => {
             if (e.target === document.body && (
-                e.keyCode === KeyEvent.DOM_VK_SPACE ||
-                e.keyCode === KeyEvent.DOM_VK_UP ||
-                e.keyCode === KeyEvent.DOM_VK_DOWN ||
-                e.keyCode === KeyEvent.DOM_VK_LEFT ||
-                e.keyCode === KeyEvent.DOM_VK_RIGHT)) {
+                e.code === 'Space' ||
+                e.code === 'ArrowUp' ||
+                e.code === 'ArrowDown' ||
+                e.code === 'ArrowLeft' ||
+                e.code === 'ArrowRight')) {
                 e.preventDefault();
             }
         });
