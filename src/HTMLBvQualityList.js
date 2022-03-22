@@ -1,6 +1,6 @@
 // HTMLBvQualityList.js
 
-const BV_QUALITY_LIST_CHANGED_EVENT_NAME = 'qualitylist-changed';
+const BV_QUALITY_LIST_CHANGED_EVENT_NAME = 'qualitylist.changed';
 
 
 class HTMLBvQualityList extends HTMLElement {
@@ -35,10 +35,10 @@ class HTMLBvQualityList extends HTMLElement {
 
             // Notify Parent
 
-            /** @type {ChangedEventOptions} */
+            /** @type {QualityChangedEventOptions} */
             const options = {
                 action: 'added',
-                element: newQuality,
+                qualityEl: newQuality,
             };
 
             /** @type {CustomEvent} */
@@ -59,10 +59,10 @@ class HTMLBvQualityList extends HTMLElement {
 
             // Notify Parent
 
-            /** @type {ChangedEventOptions} */
+            /** @type {QualityChangedEventOptions} */
             const options = {
                 action: 'removed',
-                element: removeQuality,
+                qualityEl: removeQuality,
             };
 
             /** @type {CustomEvent} */
@@ -81,10 +81,10 @@ class HTMLBvQualityList extends HTMLElement {
             // @ts-ignore
             const changedQuality = e.detail;
 
-            /** @type {ChangedEventOptions} */
+            /** @type {QualityChangedEventOptions} */
             const options = {
                 action: 'modified',
-                element: changedQuality,
+                qualityEl: changedQuality,
             };
 
             /** @type {CustomEvent} */

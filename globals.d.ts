@@ -70,15 +70,29 @@ interface EpisodeSubItems {
 /**
  * Параметры события изменения эпизода видео.
  */
-interface ChangedEventOptions {
+interface EpisodeChangedEventOptions {
     /**
      * Операция.
      */
-    action: 'added'|'modified'|'removed',
+    action: 'added'|'modified'|'removed';
     /**
      * Элемент.
      */
-    element: HTMLElement,
+    episodeEl: HTMLBvEpisode;
+}
+
+/**
+ * Параметры события изменения качества видео.
+ */
+ interface QualityChangedEventOptions {
+    /**
+     * Операция.
+     */
+    action: 'added'|'modified'|'removed';
+    /**
+     * Элемент.
+     */
+    qualityEl: HTMLBvQuality;
 }
 
 interface HTMLDivElement {

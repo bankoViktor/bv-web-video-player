@@ -2,14 +2,18 @@
 
 const BV_EPISODE_DURATION_ATTRIBUTE_NAME = 'duration';
 const BV_EPISODE_TITLE_ATTRIBUTE_NAME = 'title';
-const BV_EPISODE_ADD_EVENT_NAME = 'episode-add';
-const BV_EPISODE_REMOVE_EVENT_NAME = 'episode-remove';
-const BV_EPISODE_CHANGED_EVENT_NAME = 'episode-changed';
+
+const BV_EPISODE_ADD_EVENT_NAME = 'episode.add';
+const BV_EPISODE_REMOVE_EVENT_NAME = 'episode.remove';
 
 
 class HTMLBvEpisode extends HTMLElement {
 
-    constructor() {
+    /**
+     * Конструктор
+     * @param {EpisodeInfo=} episodeInfo 
+     */
+    constructor(episodeInfo) {
         super();
 
         /**
@@ -36,6 +40,11 @@ class HTMLBvEpisode extends HTMLElement {
          */
         this._episodeList = null;
 
+
+        if (typeof episodeInfo !== 'undefined' && episodeInfo !== null) {
+            this.title = episodeInfo.title;
+            this.duration = episodeInfo.duration;
+        }
 
         this._logger.log('constructor');
     }

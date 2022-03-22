@@ -1,6 +1,6 @@
 // HTMLBvEpisodeList.js
 
-const BV_EPISODE_LIST_CHANGED_EVENT_NAME = 'episodelist-changed';
+const BV_EPISODE_LIST_CHANGED_EVENT_NAME = 'episodelist.changed';
 
 
 class HTMLBvEpisodeList extends HTMLElement {
@@ -17,18 +17,18 @@ class HTMLBvEpisodeList extends HTMLElement {
         //#region Events 
 
         this.addEventListener(BV_EPISODE_ADD_EVENT_NAME, e => {
-            this._logger.log('episode add');
-
             /** @type {HTMLBvEpisode} */
             // @ts-ignore
             const newEpisode = e.detail;
 
+            this._logger.log(`Add episode: ${newEpisode.title}`);
+
             // Notify Parent
 
-            /** @type {ChangedEventOptions} */
+            /** @type {EpisodeChangedEventOptions} */
             const options = {
                 action: 'added',
-                element: newEpisode,
+                episodeEl: newEpisode,
             };
 
             /** @type {CustomEvent} */
@@ -41,40 +41,18 @@ class HTMLBvEpisodeList extends HTMLElement {
             this.parentElement.dispatchEvent(event);
         });
         this.addEventListener(BV_EPISODE_REMOVE_EVENT_NAME, e => {
-            this._logger.log('episode remove');
-
-            /** @type {HTMLBvQuality} */
+            /** @type {HTMLBvEpisode} */
             // @ts-ignore
             const removeEpisode = e.detail;
 
+            this._logger.log(`Remove episode: ${removeEpisode.title}`);
+
             // Notify Parent
 
-            /** @type {ChangedEventOptions} */
+            /** @type {EpisodeChangedEventOptions} */
             const options = {
                 action: 'removed',
-                element: removeEpisode,
-            };
-
-            /** @type {CustomEvent} */
-            const event = new CustomEvent(BV_EPISODE_LIST_CHANGED_EVENT_NAME, {
-                detail: options,
-                cancelable: false,
-                composed: true,
-                bubbles: false,
-            });
-            this.parentElement.dispatchEvent(event);
-        });
-        this.addEventListener(BV_EPISODE_CHANGED_EVENT_NAME, e => {
-            this._logger.log('episode changed');
-
-            /** @type {HTMLBvQuality} */
-            // @ts-ignore
-            const changedEpisode = e.detail;
-
-            /** @type {ChangedEventOptions} */
-            const options = {
-                action: 'modified',
-                element: changedEpisode,
+                episodeEl: removeEpisode,
             };
 
             /** @type {CustomEvent} */
@@ -133,16 +111,28 @@ class HTMLBvEpisodeList extends HTMLElement {
     }
 
     /**
+     * Возвращает элемент эписода по его индексу без учёта элементов других типов.
      * @param {number} index
      * @returns {HTMLBvEpisode}
      */
     getEpisode(index) {
-        // @ts-ignore
-        return this.children[index];
+        for (let i = 0, j = 0; i < this.children.length; i++) {
+            /** @type {boolean} */
+            const isEpisodeElement = this.children[i].tagName === BV_EPISODE_TAG_NAME.toUpperCase();
+            if (isEpisodeElement && j == index) {
+                if (j == index) {
+                    // @ts-ignore
+                    return this.children[i];
+                } else {
+                    j++;
+                }
+            }
+        }
+        return null;
     }
 
     /**
-     * Удалить эпизод по его имени.
+     * Удаляет эпизод по его имени.
      * @param {string} title
      * @returns {void}
      */
@@ -158,12 +148,14 @@ class HTMLBvEpisodeList extends HTMLElement {
     }
 
     /**
-     * Добавить эпизод.
+     * Добавляет новый эпизод.
      * @param {EpisodeInfo} episodeInfo
      * @returns {void}
      */
     appendEpisode(episodeInfo) {
-        // TODO appendEpisode
+        /** @type {HTMLBvEpisode} */
+        const episodeEl = new HTMLBvEpisode(episodeInfo);
+        this.appendChild(episodeEl);
     }
 
 }
