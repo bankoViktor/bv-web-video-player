@@ -69,7 +69,7 @@ class HTMLBvEpisode extends HTMLElement {
 
             case BV_EPISODE_DURATION_ATTRIBUTE_NAME:
                 /** @type {number} */
-                const duration = parseInt(newValue);
+                const duration = parseFloat(newValue);
                 if (!isNaN(duration) || duration < 0) {
                     this._duration = duration;
                 } else {
