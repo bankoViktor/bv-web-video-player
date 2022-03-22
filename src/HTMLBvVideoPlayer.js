@@ -1847,12 +1847,21 @@ class HTMLBvVideoPlayer extends HTMLElement {
              * @returns {HTMLElement}
              */
             const CRT_SpinnerWrapper = () => {
+                /** @type {string} */
                 const svgNS = 'http://www.w3.org/2000/svg';
+
                 // SVG
+
+                /** @type {SVGSVGElement} */
+                // @ts-ignore
                 const spinnerWrapperEl = document.createElementNS(svgNS, 'svg');
                 spinnerWrapperEl.setAttribute('viewBox', '0 0 50 50');
                 spinnerWrapperEl.classList.add('spinner');
+
                 // Circle
+
+                /** @type {SVGCircleElement} */
+                // @ts-ignore
                 const circle = document.createElementNS(svgNS, 'circle');
                 circle.setAttribute('cx', '25');
                 circle.setAttribute('cy', '25');
@@ -1860,8 +1869,10 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 circle.setAttribute('fill', 'none');
                 circle.setAttribute('stroke-width', '5');
                 spinnerWrapperEl.appendChild(circle);
-                // ----
+
+                // Save Reference
                 this._spinnerWrapperEl = spinnerWrapperEl;
+
                 // @ts-ignore
                 return spinnerWrapperEl;
             }
