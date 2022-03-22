@@ -6,11 +6,11 @@ interface EpisodeInfo {
     /**
      * Название эпизода.
      */
-    title: string,
+    title: string;
     /**
      * Длительность эпизода.
      */
-    duration: number,
+    duration: number;
 }
 
 /**
@@ -20,11 +20,11 @@ interface QualityItem {
     /**
      * Значение URL параметра качества видео.
      */
-    value: string,
+    value: string;
     /**
      * Название качества видео.
      */
-    title: string,
+    title: string;
 }
 
 /**
@@ -34,11 +34,11 @@ interface EpisodeItem {
     /**
      * Длительность эпизода.
      */
-    duration: number,
+    duration: number;
     /**
      * Название эпизода.
      */
-    title: string,
+    title: string;
 }
 
 /**
@@ -48,23 +48,23 @@ interface EpisodeSubItems {
     /**
      * Элемент увеличения зоны интерактивности для курсора.
      */
-    padding: HTMLDivElement,
+    padding: HTMLDivElement;
     /**
      * Элемент список прогресс-баров эпизода.
      */
-    list: HTMLUListElement,
+    list: HTMLUListElement;
     /**
      * Прогресс-бар поиска под курсором.
      */
-    hover: HTMLDivElement,
+    hover: HTMLDivElement;
     /**
      * Прогресс-бар загрузки (буфера).
      */
-    load: HTMLDivElement,
+    load: HTMLDivElement;
     /**
      * Прогресс-бар проигрывания.
      */
-    play: HTMLDivElement,
+    play: HTMLDivElement;
 }
 
 /**
