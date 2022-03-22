@@ -16,7 +16,7 @@ class HTMLBvQuality extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('Quality', false);
+        this._logger = new BvLogger('Quality', loggerOptions.quality);
 
         /**
          * Коллекция-владелец.

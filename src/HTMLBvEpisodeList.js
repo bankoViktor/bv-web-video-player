@@ -12,7 +12,7 @@ class HTMLBvEpisodeList extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('EpisodeList', true);
+        this._logger = new BvLogger('EpisodeList', loggerOptions.episodeList);
 
         //#region Events 
 

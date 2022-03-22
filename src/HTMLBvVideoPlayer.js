@@ -38,7 +38,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('VideoPlayer', true);
+        this._logger = new BvLogger('VideoPlayer', loggerOptions.player);
 
         //#region Properties
 

@@ -12,7 +12,7 @@ class HTMLBvQualityList extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('QualityList', false);
+        this._logger = new BvLogger('QualityList', loggerOptions.qualityList);
 
 
         //#region This Events Handlers

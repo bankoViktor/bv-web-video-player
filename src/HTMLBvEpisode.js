@@ -16,7 +16,7 @@ class HTMLBvEpisode extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('Episode', true);
+        this._logger = new BvLogger('Episode', loggerOptions.episode );
 
         /**
          * Длительность эпизода.
