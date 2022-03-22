@@ -289,13 +289,12 @@ li.episode-hover {
     display: inline-block;
     height: var(--button-size);
     width: var(--button-size);
-    /* background-color: transparent; */
+    background-color: transparent;
     border: 0px solid transparent;
     cursor: pointer;
     padding: 0;
     outline: none;
     vertical-align: middle;
-    background-color: rgba(0, 124, 182, 0.2)
 }
 
     .controls-container button path {
