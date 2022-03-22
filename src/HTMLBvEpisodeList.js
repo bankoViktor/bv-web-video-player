@@ -118,6 +118,10 @@ class HTMLBvEpisodeList extends HTMLElement {
      */
     connectedCallback() {
         this._logger.log('connected');
+
+        if (this.parentElement === null || this.parentElement.tagName !== BV_VIDEO_PLAYER_TAG_NAME.toUpperCase()) {
+            this._logger.error(`Тег '${BV_EPISODE_LIST_TAG_NAME}' должен находиться внутри элемента '${BV_VIDEO_PLAYER_TAG_NAME}'.`);
+        }
     }
 
     /**

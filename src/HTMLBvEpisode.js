@@ -91,7 +91,7 @@ class HTMLBvEpisode extends HTMLElement {
     connectedCallback() {
         this._logger.log(`connected: duration = ${dur2str(this._duration)}, title = '${this._title}'`);
 
-        if (this.parentElement === null || this.parentElement.nodeName !== BV_EPISODE_LIST_TAG_NAME.toUpperCase()) {
+        if (this.parentElement === null || this.parentElement.tagName !== BV_EPISODE_LIST_TAG_NAME.toUpperCase()) {
             this._logger.error(`Тег '${BV_EPISODE_TAG_NAME}' должен находиться внутри элемента '${BV_EPISODE_LIST_TAG_NAME}'.`);
         } else {
             // @ts-ignore
