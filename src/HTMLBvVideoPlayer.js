@@ -2106,12 +2106,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
             && episodeInfos !== null
             && episodeInfos.length > 0;
 
-        if (hasEpisodeInfos) {
-            // Remove
-            this._innerRemoveEpisodes();
-            // Append
-            episodeInfos.forEach(episodeInfo => this.appendEpisode(episodeInfo));
+        if (!hasEpisodeInfos) {
+            this._logger.error(`Invalid parameter.`);
+            return;
         }
+
+        // Remove
+        this._innerRemoveEpisodes();
+        
+        // Append
+        episodeInfos.forEach(episodeInfo => this.appendEpisode(episodeInfo));
 
         // Restore State
         // TODO востановить состояние play и hover элементов эпизода
