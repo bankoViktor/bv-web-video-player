@@ -2117,6 +2117,15 @@ class HTMLBvVideoPlayer extends HTMLElement {
         // TODO востановить состояние play и hover элементов эпизода
     }
 
+    /**
+     * Кофигурирует плеер.
+     * @param {BvPlayerOptions} options
+     */
+    configure(options) {
+        this.source = options.source;
+        this.param = options.paramName;
+    }
+
 };
 
 window.customElements.define(BV_VIDEO_PLAYER_TAG_NAME, HTMLBvVideoPlayer);

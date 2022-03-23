@@ -110,3 +110,25 @@ interface Window {
      */
     pageY: number;
 }
+
+/**
+ * Параметры миниатюры для элемента {@link HTMLBvVideoPlayer}
+ */
+ interface PreviewOptions {
+    width: number;
+    height: number;
+    countPerRow: number;
+    countPerColumn: number;
+    path: string;
+    step: number;
+}
+
+
+/**
+ * Параметры элемента {@link HTMLBvVideoPlayer}
+ */
+interface BvPlayerOptions {
+    paramName: string;
+    source: string;
+    previewOptions: PreviewOptions;
+}
