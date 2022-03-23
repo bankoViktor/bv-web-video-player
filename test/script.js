@@ -27,9 +27,10 @@ document.querySelector('#episodeAdd').addEventListener('click', () => {
 /**
  * Имитация запроса списка эпизодов у сервера.
  * @async
+ * @param {number=} delayMs
  * @returns {Promise<EpisodeInfo[]>}
  */
-const fetchEpisodesAsync = function() {
+const fetchEpisodesAsync = function(delayMs = 2000) {
     return new Promise(resolve => {
         setTimeout(() => {
             /** @type {number} */
@@ -86,12 +87,12 @@ const fetchEpisodesAsync = function() {
                 },
             ];
             resolve(episodes);
-        }, 2000);
+        }, delayMs);
     });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
     /** @type {EpisodeInfo[]} */
-    const episodeInfos = await fetchEpisodesAsync();
+    const episodeInfos = await fetchEpisodesAsync(4000);
     player.setEpisodes(episodeInfos);
 });
