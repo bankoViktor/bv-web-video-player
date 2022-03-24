@@ -16,7 +16,11 @@ class HTMLBvQualityList extends HTMLElement {
 
 
         this._logger.log('constructor');
-            }
+    }
+
+    static get observedAttributes() {
+        return [];
+    }
 
     /**
     * Компонент добавляется в DOM.
@@ -32,15 +36,6 @@ class HTMLBvQualityList extends HTMLElement {
      */
     disconnectedCallback() {
         this._logger.log('disconnected');
-    }
-
-    /**
-     * @param {number} index
-     * @returns {HTMLBvQuality}
-     */
-    getQuality(index) {
-        // @ts-ignore
-        return this.children[index];
     }
 
 }

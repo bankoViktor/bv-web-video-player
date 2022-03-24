@@ -53,43 +53,6 @@ class HTMLBvEpisodeList extends HTMLElement {
     }
 
     /**
-     * Возвращает элемент эписода по его индексу без учёта элементов других типов.
-     * @param {number} index
-     * @returns {HTMLBvEpisode}
-     */
-    getEpisode(index) {
-        for (let i = 0, j = 0; i < this.children.length; i++) {
-            /** @type {boolean} */
-            const isEpisodeElement = this.children[i].tagName === BV_EPISODE_TAG_NAME.toUpperCase();
-            if (isEpisodeElement && j == index) {
-                if (j == index) {
-                    // @ts-ignore
-                    return this.children[i];
-                } else {
-                    j++;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Удаляет эпизод по его имени.
-     * @param {string} title
-     * @returns {void}
-     */
-    removeEpisode(title) {
-        for (let i = 0; i < this.children.length; i++) {
-            /** @type {HTMLBvEpisode} */
-            const episode = this.getEpisode(i);
-            if (title === episode.title) {
-                episode.remove();
-                break;
-            }
-        }
-    }
-
-    /**
      * Добавляет новый эпизод.
      * @param {EpisodeInfo} episodeInfo
      * @returns {void}
