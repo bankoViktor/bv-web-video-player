@@ -33,10 +33,14 @@
     -->
 
     <div class="group" data-title="Episodes:">
-      <button id="episodeClear">Clear Episodes</button>
-      Название <input id="episodeTitle" type="text" value="Episode" style="width: 400px;" />
-      Длительность, % <input id="episodeDuration" type="number" min="0" max="100" value="50" />
-      <button id="episodeAdd">Add Episode</button>
+      <button id="addEmptyEpisodeList">Add Empty Episode List</button><br/>
+      <button id="addEpisodeListWithEpisodes">Add Episode List with Episodes</button><br/>
+      <button id="removeEpisodeList">Remove Episode List</button><br/>
+      <button id="addEpisode">Add Episode</button>
+      Название <input id="episodeTitle" type="text" value="Episode" style="width: 250px;" />
+      Длительность, % <input id="episodeDuration" type="number" min="0" max="100" value="50" /><br/>
+      <button id="removeEpisodes">Remove Episodes</button><br/>
+      <button id="fetchEpisodes">Fetch Episodes</button><br/>
     </div>
 
     <script src="../src/Constants.js"></script>
