@@ -4,6 +4,7 @@ const BV_VIDEO_PLAYER_SOURCE_ATTRIBUTE_NAME = 'src';
 const BV_VIDEO_PLAYER_PARAM_ATTRIBUTE_NAME = 'param';
 const BV_VIDEO_PLAYER_SPEED_CONTROL_ATTRIBUTE_NAME = 'speed-control';
 const BV_VIDEO_PLAYER_HOTKEY_ATTRIBUTE_NAME = 'hotkey';
+const BV_VIDEO_PLAYER_DEFAULT_EPISODE_ATTRIBUTE_NAME = 'data-default';
 
 const BV_VIDEO_PLAYER_PROGRESS_BAR_CLASS_NAME = 'progress-bar';
 const BV_VIDEO_PLAYER_PROGRESS_SCRUBBER_CLASS_NAME = 'progress-scrubber';
@@ -595,6 +596,85 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
         //#endregion This Events
 
+        /** @type {MutationObserver} */
+        this._mutationObserver = new MutationObserver(mutations => {
+            /**
+             * Update Episodes into Progress Bar.
+             * @returns {void}
+             */
+            const updateProgressBarEpisodes = () => {
+                /** @type {HTMLBvEpisodeList} */
+                // @ts-ignore
+                const episodeListEl = this.querySelector(BV_EPISODE_LIST_TAG_NAME);
+
+                /** @type {boolean} */
+                const hasEpisodeListEl = typeof episodeListEl !== 'undefined'
+                    && episodeListEl !== null;
+
+                /** @type {EpisodeInfo[]} */
+                const episodeInfos = hasEpisodeListEl ? episodeListEl.episodes : [];
+
+                this._innerRemoveEpisodes();
+
+                if (episodeInfos.length > 0) {
+                    episodeInfos.forEach(episodeInfo => this._innerAppendEpisode(episodeInfo));
+                }
+
+                this._logger.info(`Update ProgressBar Episodes: ${episodeInfos.length} items`);
+            }
+
+            mutations.forEach(mutation => {
+                 // Removed
+                 mutation.removedNodes.forEach(removedNode => {
+
+                    switch (removedNode.nodeName) {
+                        case BV_EPISODE_TAG_NAME.toUpperCase():
+                            updateProgressBarEpisodes();
+                            break;
+
+                        case BV_EPISODE_LIST_TAG_NAME.toUpperCase():
+                            /** @type {boolean} */
+                            // @ts-ignore
+                            const existEpisodeList = this.querySelectorAll(BV_EPISODE_LIST_TAG_NAME).length > 0;
+
+                            if (!existEpisodeList) {
+                                updateProgressBarEpisodes();
+                            }
+                            break;
+                    }
+                });
+
+                // Added
+                mutation.addedNodes.forEach(addedNode => {
+                    switch (addedNode.nodeName) {
+                        case BV_EPISODE_TAG_NAME.toUpperCase():
+                            updateProgressBarEpisodes();
+                            break;
+
+                        case BV_EPISODE_LIST_TAG_NAME.toUpperCase():
+                            /** @type {HTMLBvEpisodeList} */
+                            // @ts-ignore
+                            const addedEpisodeListEl = addedNode;
+
+                            // Remove old EpisodeList
+
+                            /** @type {HTMLBvEpisodeList[]} */
+                            // @ts-ignore
+                            const episodeListEls = [...this.querySelectorAll(BV_EPISODE_LIST_TAG_NAME)];
+                            
+                            episodeListEls.forEach(episodeListEl => {
+                                if (episodeListEl !== addedEpisodeListEl) {
+                                    episodeListEl.remove();
+                                }
+                            });
+
+                            updateProgressBarEpisodes();
+                            break;
+                    }
+                });
+            });
+        });
+
         this._logger.log('constructor');
     }
 
@@ -627,6 +707,28 @@ class HTMLBvVideoPlayer extends HTMLElement {
 
     /** @type {HTMLBvEpisodeList} */
     get episodeListElement() { return this.querySelector(BV_EPISODE_LIST_TAG_NAME); }
+
+    get episodes() {
+        return this.episodeListElement !== null
+            ? this.episodeListElement.episodes
+            : [];
+    }
+    set episodes(v) {
+        /** @type {boolean} */
+        const hasEpisodeInfos = v !== null
+            && v.length > 0;
+
+        if (!hasEpisodeInfos) {
+            this._logger.error(`Invalid parameter.`);
+            return;
+        }
+
+        // Remove All Episodes
+        this.removeEpisodes();
+
+        // Append
+        v.forEach(episodeInfo => this._innerAppendEpisode(episodeInfo));
+    }
 
     /**
      * Компоненту добавляют, удаляют или изменяют атрибут.
@@ -677,6 +779,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
         if (!this._isInitialized) {
             this._initialization();
         }
+
+        this._mutationObserver.observe(this, {
+            attributes: true,
+            characterData: true,
+            childList: true,
+            subtree: true,
+            attributeOldValue: true,
+            characterDataOldValue: true
+        });
+
         this._updateControls();
 
         this._logger.log(`connected`);
@@ -689,6 +801,8 @@ class HTMLBvVideoPlayer extends HTMLElement {
     disconnectedCallback() {
         clearInterval(this._moveTimer);
         this._moveTimer = null;
+
+        this._mutationObserver.disconnect();
 
         this._logger.log('disconnected');
     }
@@ -1830,7 +1944,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         }
 
         // Add Single Default Episode
-        this.appendEpisode();
+        this._innerRemoveEpisodes();
 
         this._isInitialized = true;
     }
@@ -1902,34 +2016,11 @@ class HTMLBvVideoPlayer extends HTMLElement {
     //#endregion Create Functions
 
     /**
-     * Добавляет новый эпизод.
-     * @param {EpisodeInfo=} episodeInfo
-     * @returns {void}
-     */
-    appendEpisode(episodeInfo) {
-        /** @type {boolean} */
-        const hasData = typeof episodeInfo !== 'undefined'
-            && episodeInfo !== null;
-
-        if (hasData) {
-            // Append Episode to EpisodeList
-            if (this.episodeListElement === null) {
-                this.appendChild(new HTMLBvEpisodeList());
-            }
-            this.episodeListElement.appendEpisode(episodeInfo);
-        } else {
-            // Append Default Episode
-            this._innerAppendEpisode();
-        }
-    }
-
-    /**
-     * Создает и добавляет новый эпизод в прогресс-бар.
+     * Создает и добавляет новый эпизод в прогресс-бар. Удаляет эпизод по-умолчанию, если он есть.
      * @param {EpisodeInfo=} episodeInfo
      * @returns {HTMLLIElement}
      */
     _innerAppendEpisode(episodeInfo) {
-
         /** @type {boolean} */
         const hasData = typeof episodeInfo !== 'undefined'
             && episodeInfo !== null;
@@ -1937,7 +2028,7 @@ class HTMLBvVideoPlayer extends HTMLElement {
         // Remove Default Episode
 
         if (hasData) {
-            const defItem = this._episodesContainerEl.querySelector('[data-default]');
+            const defItem = this._episodesContainerEl.querySelector(`[${BV_VIDEO_PLAYER_DEFAULT_EPISODE_ATTRIBUTE_NAME}]`);
             if (defItem !== null) {
                 defItem.remove();
             }
@@ -1974,12 +2065,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
             percentWidth = episodeInfo.duration / this.duration;
         }
         item.style.width = percentWidth * 100 + '%';
-
-        // Default
-
-        if (!hasData) {
-            item.setAttribute('data-default', '');
-        }
 
         /**
          * Create Episode List Sub Items
@@ -2022,17 +2107,16 @@ class HTMLBvVideoPlayer extends HTMLElement {
     }
 
     /**
-     * Удаляет все эпизоды.
+     * Удаляет все эпизоды из прогрес-бара и добавляет эпизод по-умолчанию.
      * @returns {void}
      */
     _innerRemoveEpisodes() {
-        // Episode List Element
-        if (this.episodeListElement !== null) {
-            this.episodeListElement.remove();
-        }
-
-        // Episode List
+        // Remove All Episodes
         this._episodesContainerEl.innerHTML = '';
+
+        // Add Default Episode
+        const defEpisodeEl = this._innerAppendEpisode();
+        defEpisodeEl.setAttribute(BV_VIDEO_PLAYER_DEFAULT_EPISODE_ATTRIBUTE_NAME, '');
     }
 
     /**
@@ -2040,35 +2124,9 @@ class HTMLBvVideoPlayer extends HTMLElement {
      * @returns {void}
      */
     removeEpisodes() {
-        this._innerRemoveEpisodes();
-        // Add Default Episode
-        this.appendEpisode();
-    }
-
-    /**
-     * Устанавливает список эпизодов.
-     * @param {EpisodeInfo[]} episodeInfos
-     * @returns {void}
-     */
-    setEpisodes(episodeInfos) {
-        /** @type {boolean} */
-        const hasEpisodeInfos = typeof episodeInfos !== 'undefined'
-            && episodeInfos !== null
-            && episodeInfos.length > 0;
-
-        if (!hasEpisodeInfos) {
-            this._logger.error(`Invalid parameter.`);
-            return;
+        if (this.episodeListElement !== null) {
+            this.episodeListElement.remove();
         }
-
-        // Remove
-        this._innerRemoveEpisodes();
-        
-        // Append
-        episodeInfos.forEach(episodeInfo => this.appendEpisode(episodeInfo));
-
-        // Restore State
-        // TODO востановить состояние play и hover элементов эпизода
     }
 
     /**

@@ -21,18 +21,36 @@ class HTMLBvEpisodeList extends HTMLElement {
     }
 
     get episodes() {
+        /**
+         * Проверяет является ли указанный элемент элементом {@link HTMLBvEpisode}.
+         * @param {Element} element
+         * @returns {boolean}
+         */
+        const isEpisodeElement = element => {
+            return element.nodeName === BV_EPISODE_TAG_NAME.toUpperCase();
+        }
+
         /** @type {EpisodeInfo[]} */
         const episodes = [];
+
         for (let i = 0; i < this.children.length; i++) {
-            /** @type {HTMLBvEpisode} */
-            const episode = this.getEpisode(i);
-            /** @type {EpisodeInfo} */
-            const info = {
-                title: episode.title,
-                duration: episode.duration,
+            /** @type {Element} */
+            const child = this.children[i];
+
+            if (isEpisodeElement(child)) {
+                /** @type {HTMLBvEpisode} */
+                // @ts-ignore
+                const episodeEl = child;
+
+                /** @type {EpisodeInfo} */
+                const info = {
+                    title: episodeEl.title,
+                    duration: episodeEl.duration,
+                }
+                episodes.push(info);
             }
-            episodes.push(info);
         }
+
         return episodes;
     }
 
@@ -61,6 +79,15 @@ class HTMLBvEpisodeList extends HTMLElement {
         /** @type {HTMLBvEpisode} */
         const episodeEl = new HTMLBvEpisode(episodeInfo);
         this.appendChild(episodeEl);
+    }
+
+    /**
+     * Добавляет новый эпизод.
+     * @param {EpisodeInfo[]} episodeInfos
+     * @returns {void}
+     */
+    appendEpisodes(episodeInfos) {
+        episodeInfos.forEach(episodeInfo => this.appendEpisode(episodeInfo));
     }
 
 }
