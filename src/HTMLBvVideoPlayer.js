@@ -592,56 +592,6 @@ class HTMLBvVideoPlayer extends HTMLElement {
                 this.style.cursor = '';
             }
         });
-        this.addEventListener('--qualitylist-changed', e => {
-            this._logger.log('QualityList changed');
-
-            /** @type {QualityChangedEventOptions} */
-            // @ts-ignore
-            const options = e.detail;
-            switch (options.action) {
-
-                case 'added':
-                    ///** @type {HTMLLIElement} */
-                    //const menuItem = this.createMenuItem(options.element.value, options.element.innerHTML);
-                    //this._menuItemList.appendChild(menuItem);
-                    //// Первый по-умолчанию
-                    //if (this._curParValue === null) {
-                    //    menuItem.click();
-                    //}
-                    break;
-
-                case 'removed':
-
-                    break;
-
-                case 'modified':
-
-                    break;
-
-            }
-        });
-        this.addEventListener(BV_EPISODE_LIST_CHANGED_EVENT_NAME, e => {
-            /** @type {EpisodeChangedEventOptions} */
-            // @ts-ignore
-            const options = e.detail;
-
-            switch (options.action) {
-                case 'added':
-                    this._innerAppendEpisode({
-                        title: options.episodeEl.title,
-                        duration: options.episodeEl.duration,
-                    });
-                    break;
-
-                case 'removed':
-                    const el = this._innerRemoveEpisodes();
-                    break;
-                
-                default:
-                    this._logger.error(`Unknown Action of Changed event.`);
-                    break;
-            }
-        });
 
         //#endregion This Events
 

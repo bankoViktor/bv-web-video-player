@@ -3,9 +3,6 @@
 const BV_EPISODE_DURATION_ATTRIBUTE_NAME = 'duration';
 const BV_EPISODE_TITLE_ATTRIBUTE_NAME = 'title';
 
-const BV_EPISODE_ADD_EVENT_NAME = 'episode.add';
-const BV_EPISODE_REMOVE_EVENT_NAME = 'episode.remove';
-
 
 class HTMLBvEpisode extends HTMLElement {
 
@@ -20,7 +17,7 @@ class HTMLBvEpisode extends HTMLElement {
          * Логгер класса.
          * @type {BvLogger} 
          */
-        this._logger = new BvLogger('Episode', loggerOptions.episode );
+        this._logger = new BvLogger('Episode', loggerOptions.episode);
 
         /**
          * Длительность эпизода.
@@ -33,13 +30,6 @@ class HTMLBvEpisode extends HTMLElement {
          * @type {string} 
          */
         this._title = null;
-
-        /**
-         * Родительский элемент-коллекция.
-         * @type {HTMLBvEpisodeList}
-         */
-        this._episodeList = null;
-
 
         if (typeof episodeInfo !== 'undefined' && episodeInfo !== null) {
             this.title = episodeInfo.title;
@@ -99,15 +89,6 @@ class HTMLBvEpisode extends HTMLElement {
      */
     connectedCallback() {
         this._logger.log(`connected: title = '${this._title}'`);
-
-        if (this.parentElement === null || this.parentElement.tagName !== BV_EPISODE_LIST_TAG_NAME.toUpperCase()) {
-            this._logger.error(`Тег '${BV_EPISODE_TAG_NAME}' должен находиться внутри элемента '${BV_EPISODE_LIST_TAG_NAME}'.`);
-        } else {
-            // @ts-ignore
-            this._episodeList = this.parentElement;
-
-            this._notifyParent(BV_EPISODE_ADD_EVENT_NAME);
-        }
     }
 
     /**
@@ -115,29 +96,7 @@ class HTMLBvEpisode extends HTMLElement {
      * @returns {void}
      */
     disconnectedCallback() {
-        this._notifyParent(BV_EPISODE_REMOVE_EVENT_NAME);
         this._logger.log('disconnected');
-    }
-
-    /**
-     * Уведомляет родительский элемент.
-     * @param {string} eventName
-     * @returns {void}
-     */
-    _notifyParent(eventName) {
-        if (this._episodeList === null) {
-            return;
-        }
-
-        /** @type {Event} */
-        const event = new CustomEvent(eventName, {
-            detail: this,
-            cancelable: false,
-            composed: true,
-            bubbles: true,
-        })
-
-        this._episodeList.dispatchEvent(event);
     }
 
 }
