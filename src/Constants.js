@@ -8,8 +8,8 @@ const BV_QUALITY_TAG_NAME = 'bv-quality';
 
 const loggerOptions = {
     player: true,
-    episode: true,
-    episodeList: true,
+    episode: false,
+    episodeList: false,
     quality: true,
     qualityList: true,
 }
